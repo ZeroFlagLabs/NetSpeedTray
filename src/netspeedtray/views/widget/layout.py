@@ -294,9 +294,37 @@ class WidgetLayoutManager:
                             cpu_width += hw_suffix_width
                         if monitor_ram and mem_ref:
                             if stack_hw: # inline
-                                cpu_width += self.metrics.horizontalAdvance(f" | {mem_ref}") + mem_label_w
+                                custom_spacing = self.widget.config.get("widget_section_spacing")
+                                if (
+                                    isinstance(custom_spacing, int)
+                                    and not isinstance(custom_spacing, bool)
+                                ):
+                                    inline_spacing = max(
+                                        constants.layout.WIDGET_SECTION_SPACING_MIN_PX,
+                                        min(
+                                            constants.layout.WIDGET_SECTION_SPACING_MAX_PX,
+                                            custom_spacing,
+                                        ),
+                                    )
+                                else:
+                                    inline_spacing = (
+                                        constants.layout.WIDGET_SECTION_SPACING_DEFAULT_PX
+                                    )
+
+                                inline_spacing += (
+                                    constants.layout.WIDGET_STACKED_MEMORY_GAP_ADJUST_PX
+                                )
+
+                                cpu_width += (
+                                    inline_spacing
+                                    + mem_label_w
+                                    + self.metrics.horizontalAdvance(mem_ref)
+                                )
                             else: # row
-                                cpu_width = max(cpu_width, self.metrics.horizontalAdvance(mem_ref) + mem_label_w)
+                                cpu_width = max(
+                                    cpu_width,
+                                    self.metrics.horizontalAdvance(mem_ref) + mem_label_w
+                                )
                         cpu_width += margin # Reclaim Left Margin offset budget from draw_hardware_stats
 
                     gpu_width = 0
@@ -306,9 +334,37 @@ class WidgetLayoutManager:
                             gpu_width += hw_suffix_width
                         if monitor_vram and mem_ref:
                             if stack_hw: # inline
-                                gpu_width += self.metrics.horizontalAdvance(f" | {mem_ref}") + mem_label_w
+                                custom_spacing = self.widget.config.get("widget_section_spacing")
+                                if (
+                                    isinstance(custom_spacing, int)
+                                    and not isinstance(custom_spacing, bool)
+                                ):
+                                    inline_spacing = max(
+                                        constants.layout.WIDGET_SECTION_SPACING_MIN_PX,
+                                        min(
+                                            constants.layout.WIDGET_SECTION_SPACING_MAX_PX,
+                                            custom_spacing,
+                                        ),
+                                    )
+                                else:
+                                    inline_spacing = (
+                                        constants.layout.WIDGET_SECTION_SPACING_DEFAULT_PX
+                                    )
+
+                                inline_spacing += (
+                                    constants.layout.WIDGET_STACKED_MEMORY_GAP_ADJUST_PX
+                                )
+
+                                gpu_width += (
+                                    inline_spacing
+                                    + mem_label_w
+                                    + self.metrics.horizontalAdvance(mem_ref)
+                                )
                             else: # row
-                                gpu_width = max(gpu_width, self.metrics.horizontalAdvance(mem_ref) + mem_label_w)
+                                gpu_width = max(
+                                    gpu_width,
+                                    self.metrics.horizontalAdvance(mem_ref) + mem_label_w
+                                )
                         gpu_width += margin # Reclaim Left Margin offset budget
                             
                     if stack_hw and monitor_cpu and monitor_gpu:
@@ -318,11 +374,66 @@ class WidgetLayoutManager:
                         
                     calculated_width_accum += margin # Add padding for the rightmost edge of the window frame
                         
+                    custom_spacing = self.widget.config.get("widget_section_spacing")
+                    if (
+                        isinstance(custom_spacing, int)
+                        and not isinstance(custom_spacing, bool)
+                    ):
+                        section_spacing = max(
+                            constants.layout.WIDGET_SECTION_SPACING_MIN_PX,
+                            min(
+                                constants.layout.WIDGET_SECTION_SPACING_MAX_PX,
+                                custom_spacing,
+                            ),
+                        )
+                    else:
+                        section_spacing = (
+                            constants.layout.WIDGET_SECTION_SPACING_DEFAULT_PX
+                        )
+
+                    # Match the painter's visible-gap calculation. The
+                    # segment renderers already contribute internal edge
+                    # margins, so only reserve the remaining positioning gap.
+                    active_layout_keys = []
+                    for key in display_order:
+                        if key == "network":
+                            active_layout_keys.append("network")
+                        elif key == "cpu" and monitor_cpu:
+                            if stack_hw and monitor_gpu:
+                                if "hardware" not in active_layout_keys:
+                                    active_layout_keys.append("hardware")
+                            else:
+                                active_layout_keys.append("cpu")
+                        elif key == "gpu" and monitor_gpu:
+                            if stack_hw and monitor_cpu:
+                                if "hardware" not in active_layout_keys:
+                                    active_layout_keys.append("hardware")
+                            else:
+                                active_layout_keys.append("gpu")
+
+                    margin = constants.renderer.TEXT_MARGIN
                     gaps = 0
-                    if "network" in display_order and (monitor_cpu or monitor_gpu):
-                        gaps += constants.layout.WIDGET_SEGMENT_GAP_AFTER_NETWORK_PX # Gap after Network
-                    if monitor_cpu and monitor_gpu and not stack_hw:
-                        gaps += constants.layout.WIDGET_SEGMENT_GAP_BETWEEN_HARDWARE_PX  # Gap between CPU and GPU
+
+                    for boundary_index, previous_key in enumerate(
+                        active_layout_keys[:-1]
+                    ):
+                        built_in_margin = (
+                            2 * margin
+                            if previous_key == "network"
+                            else margin
+                        )
+
+                        side_by_side_trim = (
+                            constants.layout.WIDGET_SIDE_BY_SIDE_SECOND_BOUNDARY_TRIM_PX if boundary_index == 1 else 0
+                        )
+
+                        gaps += max(
+                            0,
+                            section_spacing
+                            - built_in_margin
+                            - side_by_side_trim,
+                        )
+
                     calculated_width = calculated_width_accum + gaps
                 elif display_mode in ["cpu_only", "gpu_only", "combined"]:
                     calculated_width = 0

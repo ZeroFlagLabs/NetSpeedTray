@@ -51,3 +51,37 @@ def test_ensure_hardware_visible_respects_existing_choice(page):
     page.load_settings({"widget_display_mode": "cycle"})
     page.ensure_hardware_visible()
     assert page.get_settings()["widget_display_mode"] == "cycle"
+
+def test_section_spacing_defaults_to_uniform_layout(page):
+    """Default mode uses the fixed uniform section spacing."""
+    page.load_settings({})
+
+    assert page.section_spacing_mode.currentData() == "default"
+    assert page.section_spacing_value.value() == 10
+    assert page.section_spacing_value.isEnabled() is False
+    assert page.get_settings()["widget_section_spacing"] is None
+
+
+def test_custom_section_spacing_round_trips(page):
+    """A custom spacing value is restored and returned unchanged."""
+    page.load_settings({"widget_section_spacing": 18})
+
+    assert page.section_spacing_mode.currentData() == "custom"
+    assert page.section_spacing_value.value() == 18
+    assert page.section_spacing_value.isEnabled() is True
+    assert page.get_settings()["widget_section_spacing"] == 18
+
+
+def test_returning_to_default_resets_custom_spacing_to_ten(page):
+    """Leaving Custom mode resets the suggested custom value to 10 px."""
+    page.load_settings({"widget_section_spacing": 18})
+
+    default_index = page.section_spacing_mode.findData("default")
+    assert default_index >= 0
+
+    page.section_spacing_mode.setCurrentIndex(default_index)
+
+    assert page.section_spacing_mode.currentData() == "default"
+    assert page.section_spacing_value.value() == 10
+    assert page.section_spacing_value.isEnabled() is False
+    assert page.get_settings()["widget_section_spacing"] is None

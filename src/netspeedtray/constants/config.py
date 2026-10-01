@@ -247,6 +247,9 @@ class ConfigConstants:
         "stack_hardware_stats": DEFAULT_STACK_HARDWARE_STATS,
         "widget_display_mode": DEFAULT_WIDGET_DISPLAY_MODE,
         "widget_display_order": DEFAULT_WIDGET_DISPLAY_ORDER,
+        # None selects the uniform default section spacing. An integer
+        # applies a custom gap between active display positions.
+        "widget_section_spacing": None,
         "widget_cycle_interval": DEFAULT_WIDGET_CYCLE_INTERVAL,
         # v2.1 network identity: the Wi-Fi band (2.4G/5G) is Location-free; the SSID is gated behind
         # the Windows Location permission, so it is opt-in and defaults off. See releases/v2.1/KICKOFF.md.
@@ -381,6 +384,7 @@ class ConfigConstants:
         "stack_hardware_stats": {"type": bool, "default": DEFAULT_STACK_HARDWARE_STATS},
         "widget_display_mode": {"type": str, "default": DEFAULT_WIDGET_DISPLAY_MODE, "choices": ["network_only", "cycle", "side_by_side"]},
         "widget_display_order": {"type": list, "default": DEFAULT_WIDGET_DISPLAY_ORDER, "item_type": str},
+        "widget_section_spacing": {"type": (int, type(None)), "default": None, "min": 10, "max": 50},
         "widget_cycle_interval": {"type": int, "default": DEFAULT_WIDGET_CYCLE_INTERVAL, "min": 1, "max": 60},
         "show_network_identity": {"type": bool, "default": False},
         "identity_mode": {"type": str, "default": "band", "choices": ["band", "ssid", "both"]},

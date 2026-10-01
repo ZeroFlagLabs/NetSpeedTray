@@ -46,10 +46,18 @@ class LayoutConstants:
     SMALL_TASKBAR_HEIGHT_THRESHOLD: Final[int] = 34
     HORIZONTAL_LAYOUT_SEPARATOR: Final[str] = " | "
     MINI_GRAPH_HORIZONTAL_WIDTH: Final[int] = 40
-    # Segment gaps for Side-by-Side mode (Network | CPU/GPU). Kept compact so the network readout sits
-    # close to the hardware rather than floating far from it.
-    WIDGET_SEGMENT_GAP_AFTER_NETWORK_PX: Final[int] = 10
-    WIDGET_SEGMENT_GAP_BETWEEN_HARDWARE_PX: Final[int] = 5
+    # One consistent gap between widget display positions. Custom spacing
+    # can override this within the supported 10-50 px range.
+    WIDGET_SECTION_SPACING_DEFAULT_PX: Final[int] = 10
+    WIDGET_SECTION_SPACING_MIN_PX: Final[int] = 10
+    WIDGET_SECTION_SPACING_MAX_PX: Final[int] = 50
+
+    # Optical corrections for the two hardware layouts. These compensate for
+    # renderer geometry so equal requested spacing also looks equal on screen.
+    WIDGET_STACKED_MEMORY_GAP_ADJUST_PX: Final[int] = 1
+    WIDGET_SIDE_BY_SIDE_SECOND_BOUNDARY_TRIM_PX: Final[int] = 0
+    WIDGET_SEGMENT_GAP_AFTER_NETWORK_PX: Final[int] = WIDGET_SECTION_SPACING_DEFAULT_PX
+    WIDGET_SEGMENT_GAP_BETWEEN_HARDWARE_PX: Final[int] = WIDGET_SECTION_SPACING_DEFAULT_PX
     # Minimum gap (logical px) kept between the widget's tray-side edge and the tray boundary /
     # the "^" show-hidden-icons chevron, so the widget never abuts it and steals its clicks (#161 pt1).
     TRAY_EDGE_MIN_GAP_PX: Final[int] = 8

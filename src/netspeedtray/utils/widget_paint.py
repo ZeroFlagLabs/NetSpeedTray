@@ -145,7 +145,7 @@ def _draw_side_by_side(painter: QPainter, renderer: WidgetRenderer, width: int, 
 
     net_w = network_width if network_width is not None else width
     current_x = 0
-    for key in active_keys:
+    for index, key in enumerate(active_keys):
         if key == "network":
             if config.graph_enabled:
                 painter.save()
@@ -176,13 +176,52 @@ def _draw_side_by_side(painter: QPainter, renderer: WidgetRenderer, width: int, 
                                          metrics.cpu_temp, metrics.gpu_temp, ram, vram, layout,
                                          x_offset=current_x, cpu_power=metrics.cpu_power, gpu_power=metrics.gpu_power)
 
-        if key == "network":
-            # Advance by the explicit network width if given (live widget), else by the
-            # width the renderer just measured (preview has no layout-manager width).
-            advance = network_width if network_width is not None else renderer.get_last_text_rect().width()
-            current_x += advance + constants.layout.WIDGET_SEGMENT_GAP_AFTER_NETWORK_PX
-        else:
-            current_x += renderer.get_last_text_rect().width() + constants.layout.WIDGET_SEGMENT_GAP_BETWEEN_HARDWARE_PX
+        # Only a boundary between two active sections needs spacing.
+        if index < len(active_keys) - 1:
+            if key == "network":
+                # Advance by the explicit network width if given (live widget), else by the
+                # width the renderer just measured (preview has no layout-manager width).
+                advance = (
+                    network_width
+                    if network_width is not None
+                    else renderer.get_last_text_rect().width()
+                )
+            else:
+                advance = renderer.get_last_text_rect().width()
+
+            custom_spacing = getattr(config, "widget_section_spacing", None)
+            if (
+                isinstance(custom_spacing, int)
+                and not isinstance(custom_spacing, bool)
+            ):
+                # Custom mode uses one uniform gap between every active section.
+                gap = max(
+                    constants.layout.WIDGET_SECTION_SPACING_MIN_PX,
+                    min(
+                        constants.layout.WIDGET_SECTION_SPACING_MAX_PX,
+                        custom_spacing,
+                    ),
+                )
+            elif key == "network":
+                # Default mode uses the common configured section spacing.
+                gap = constants.layout.WIDGET_SEGMENT_GAP_AFTER_NETWORK_PX
+            else:
+                gap = constants.layout.WIDGET_SEGMENT_GAP_BETWEEN_HARDWARE_PX
+
+            # `gap` is the desired visible distance between positions.
+            # The renderers already include some edge margin, so subtract it
+            # here rather than counting it a second time.
+            margin = constants.renderer.TEXT_MARGIN
+            built_in_margin = (2 * margin) if key == "network" else margin
+
+            side_by_side_trim = constants.layout.WIDGET_SIDE_BY_SIDE_SECOND_BOUNDARY_TRIM_PX if index == 1 else 0
+
+            positioning_gap = max(
+                0,
+                gap - built_in_margin - side_by_side_trim,
+            )
+
+            current_x += advance + positioning_gap
 
 
 def _draw_foreground(painter: QPainter, renderer: WidgetRenderer, width: int, height: int,

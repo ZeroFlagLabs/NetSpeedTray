@@ -12,7 +12,7 @@ Slider→Segmented and QListWidget upgrades are intentionally NOT done here - th
 from typing import Dict, Any, Callable, List
 
 from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtWidgets import QWidget, QComboBox, QLabel
+from PyQt6.QtWidgets import QWidget, QComboBox, QLabel, QHBoxLayout, QSpinBox
 
 from netspeedtray import constants
 from netspeedtray.utils import styles as su
@@ -63,6 +63,38 @@ class WidgetPage(QWidget):
             layout.addWidget(SettingCard(getattr(self.i18n, f"ORDER_POSITION_{i+1}"), control=combo))
             self.pos_combos.append(combo)
 
+        # --- Section spacing ---
+        spacing_control = QWidget()
+        spacing_layout = QHBoxLayout(spacing_control)
+        spacing_layout.setContentsMargins(0, 0, 0, 0)
+        spacing_layout.setSpacing(8)
+
+        self.section_spacing_mode = Win11ComboBox()
+        self.section_spacing_mode.addItem(self.i18n.WIDGET_SECTION_SPACING_DEFAULT, userData="default")
+        self.section_spacing_mode.addItem(self.i18n.WIDGET_SECTION_SPACING_CUSTOM, userData="custom")
+        self.section_spacing_mode.setMinimumWidth(110)
+        self.section_spacing_mode.currentIndexChanged.connect(
+            self._on_section_spacing_mode_changed
+        )
+
+        self.section_spacing_value = QSpinBox()
+        self.section_spacing_value.setRange(
+            constants.layout.WIDGET_SECTION_SPACING_MIN_PX,
+            constants.layout.WIDGET_SECTION_SPACING_MAX_PX,
+        )
+        self.section_spacing_value.setSuffix(" px")
+        self.section_spacing_value.setValue(
+            constants.layout.WIDGET_SECTION_SPACING_DEFAULT_PX
+        )
+        self.section_spacing_value.setMinimumWidth(80)
+        self.section_spacing_value.setEnabled(False)
+        self.section_spacing_value.valueChanged.connect(self.on_change)
+
+        spacing_layout.addWidget(self.section_spacing_mode)
+        spacing_layout.addWidget(self.section_spacing_value)
+
+        layout.addWidget(SettingCard(self.i18n.WIDGET_SECTION_SPACING_LABEL, control=spacing_control))
+
         # --- Behavior (was on the General page) ---
         layout.addWidget(section_header(self.i18n.BEHAVIOR_GROUP_TITLE))
         self.free_move = Win11Toggle(label_text="")
@@ -86,6 +118,21 @@ class WidgetPage(QWidget):
         # in config for the position engine (position_manager) but aren't surfaced as fiddly px sliders.
 
         layout.addStretch()
+
+    def _on_section_spacing_mode_changed(self, _index: int) -> None:
+        custom = self.section_spacing_mode.currentData() == "custom"
+
+        if not custom:
+            # Default is a real uniform 10 px layout. Reset the displayed
+            # value too, so Default -> Custom never causes a visual jump.
+            self.section_spacing_value.blockSignals(True)
+            self.section_spacing_value.setValue(
+                constants.layout.WIDGET_SECTION_SPACING_DEFAULT_PX
+            )
+            self.section_spacing_value.blockSignals(False)
+
+        self.section_spacing_value.setEnabled(custom)
+        self.on_change()
 
     # --- behavior ---------------------------------------------------------------
     def ensure_hardware_visible(self) -> None:
@@ -136,6 +183,34 @@ class WidgetPage(QWidget):
             if idx >= 0:
                 combo.setCurrentIndex(idx)
 
+        spacing = config.get("widget_section_spacing")
+        custom_spacing = isinstance(spacing, int) and not isinstance(spacing, bool)
+
+        spacing_mode = "custom" if custom_spacing else "default"
+        index = self.section_spacing_mode.findData(spacing_mode)
+        if index >= 0:
+            self.section_spacing_mode.setCurrentIndex(index)
+
+        self.section_spacing_value.blockSignals(True)
+
+        if custom_spacing:
+            self.section_spacing_value.setValue(
+                max(
+                    constants.layout.WIDGET_SECTION_SPACING_MIN_PX,
+                    min(
+                        constants.layout.WIDGET_SECTION_SPACING_MAX_PX,
+                        spacing,
+                    ),
+                )
+            )
+        else:
+            self.section_spacing_value.setValue(
+                constants.layout.WIDGET_SECTION_SPACING_DEFAULT_PX
+            )
+
+        self.section_spacing_value.blockSignals(False)
+        self.section_spacing_value.setEnabled(custom_spacing)
+
         self.free_move.setChecked(config.get("free_move", False))
         self.free_float.setChecked(config.get("free_float", True))
         self.keep_visible_fullscreen.setChecked(
@@ -148,6 +223,11 @@ class WidgetPage(QWidget):
             "widget_display_mode": "side_by_side" if mode == "side_by_stack" else mode,
             "stack_hardware_stats": mode == "side_by_stack",
             "widget_display_order": order,
+            "widget_section_spacing": (
+                self.section_spacing_value.value()
+                if self.section_spacing_mode.currentData() == "custom"
+                else None
+            ),
             "free_move": self.free_move.isChecked(),
             "free_float": self.free_float.isChecked(),
             "keep_visible_fullscreen": self.keep_visible_fullscreen.isChecked(),
