@@ -197,7 +197,10 @@ class WidgetLayoutManager:
                     
                     _up_glyph = self.widget.config.get("arrow_up_symbol") or self.widget.i18n.UPLOAD_ARROW
                     _down_glyph = self.widget.config.get("arrow_down_symbol") or self.widget.i18n.DOWNLOAD_ARROW
-                    arrow_width = max(self.metrics.horizontalAdvance(_up_glyph), self.metrics.horizontalAdvance(_down_glyph)) if not hide_arrows else 0
+                    arrow_width = max(
+                        self.arrow_metrics.horizontalAdvance(_up_glyph),
+                        self.arrow_metrics.horizontalAdvance(_down_glyph),
+                    ) if not hide_arrows else 0
                     arrow_gap = constants.renderer.ARROW_NUMBER_GAP if not hide_arrows else 0
                     unit_gap = constants.renderer.VALUE_UNIT_GAP if not hide_units else 0
 

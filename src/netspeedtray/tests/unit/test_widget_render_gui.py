@@ -344,3 +344,117 @@ def test_memory_label_positions_stay_fixed_across_value_width_changes(renderer):
     assert single_digit["RAM"] == double_digit["RAM"]
     assert single_digit["VRAM"] == double_digit["VRAM"]
     assert single_digit["RAM"] == single_digit["VRAM"]
+
+
+def _network_alignment_renderer():
+    """Renderer matching the configuration that exposed the reserved-slot drift."""
+    cfg = dict(constants.config.defaults.DEFAULT_CONFIG)
+    cfg.update({
+        "speed_display_mode": "always_mbps",
+        "unit_type": "bits_decimal",
+        "decimal_places": 0,
+        "short_unit_labels": False,
+        "use_separate_arrow_font": True,
+        "hide_arrows": False,
+        "hide_unit_suffix": False,
+    })
+    return WidgetRenderer(cfg, I18nStrings("en_US"))
+
+
+def _network_reserved_slot_width(renderer):
+    """Mirror the normal-horizontal layout reservation for the Network section."""
+    from netspeedtray.utils.helpers import (
+        get_reference_value_string,
+        get_unit_labels_for_type,
+    )
+
+    config = renderer.config
+    margin = constants.renderer.TEXT_MARGIN
+
+    ref = get_reference_value_string(
+        True,
+        config.decimal_places,
+        config.unit_type,
+    )
+    number_width = renderer.metrics.horizontalAdvance(ref)
+
+    units = get_unit_labels_for_type(
+        renderer.i18n,
+        config.unit_type,
+        config.short_unit_labels,
+    )
+    unit_width = max(
+        renderer.metrics.horizontalAdvance(unit)
+        for unit in units
+    )
+
+    up_arrow = config.arrow_up_symbol or renderer.i18n.UPLOAD_ARROW
+    down_arrow = config.arrow_down_symbol or renderer.i18n.DOWNLOAD_ARROW
+    arrow_width = max(
+        renderer.arrow_metrics.horizontalAdvance(up_arrow),
+        renderer.arrow_metrics.horizontalAdvance(down_arrow),
+    )
+
+    return (
+        margin
+        + arrow_width
+        + constants.renderer.ARROW_NUMBER_GAP
+        + number_width
+        + constants.renderer.VALUE_UNIT_GAP
+        + unit_width
+        + margin
+    )
+
+
+def _network_rect_at_mbps(renderer, mbps, slot_width, x_offset=20):
+    img = QImage(400, 52, QImage.Format.Format_ARGB32)
+    img.fill(QColor(0, 0, 0, 0))
+    painter = QPainter(img)
+
+    bytes_per_second = mbps * MBPS_IN_BYTES
+
+    renderer.draw_network_speeds(
+        painter,
+        bytes_per_second,
+        bytes_per_second,
+        width=400,
+        height=52,
+        config=renderer.config,
+        layout_mode="horizontal",
+        x_offset=x_offset,
+        slot_width=slot_width,
+    )
+
+    painter.end()
+    return renderer.get_last_text_rect()
+
+
+def test_reserved_network_slot_has_no_leading_slack(q_app):
+    """Worst-case Network reservation must not move its visible left edge."""
+    renderer = _network_alignment_renderer()
+    slot_width = _network_reserved_slot_width(renderer)
+    margin = constants.renderer.TEXT_MARGIN
+    x_offset = 20
+
+    rect = _network_rect_at_mbps(
+        renderer,
+        0.5,
+        slot_width,
+        x_offset=x_offset,
+    )
+
+    assert rect.x() == x_offset + margin
+    assert rect.width() == slot_width - (2 * margin)
+
+
+def test_network_does_not_shift_when_mbps_promotes_to_gbps(q_app):
+    """A shorter Gbps suffix must stay inside the fixed Network unit column."""
+    renderer = _network_alignment_renderer()
+    slot_width = _network_reserved_slot_width(renderer)
+
+    mbps_rect = _network_rect_at_mbps(renderer, 500, slot_width)
+    gbps_rect = _network_rect_at_mbps(renderer, 1000, slot_width)
+
+    assert gbps_rect.x() == mbps_rect.x()
+    assert gbps_rect.width() == mbps_rect.width()
+

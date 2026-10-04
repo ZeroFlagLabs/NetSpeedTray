@@ -341,11 +341,20 @@ class WidgetRenderer:
             
             # --- FIXED/DYNAMIC WIDTH CALCULATIONS ---
             # We want units to stay put for 3 digits, but move for 4.
-            from netspeedtray.utils.helpers import get_reference_value_string
+            from netspeedtray.utils.helpers import (
+                get_reference_value_string,
+                get_unit_labels_for_type,
+            )
             
             # 1. Base 3-digit width for alignment stability
             # We use a 3-digit ref string to pin the "normal" unit position
-            ref_str_3 = get_reference_value_string(False, config.decimal_places, config.unit_type, min_digits=3)
+            force_mega_unit = config.speed_display_mode == "always_mbps"
+            ref_str_3 = get_reference_value_string(
+                force_mega_unit,
+                config.decimal_places,
+                config.unit_type,
+                min_digits=3,
+            )
             base_number_width = self.metrics.horizontalAdvance(ref_str_3)
             
             # 2. Actual max width of currently displayed values
@@ -373,7 +382,18 @@ class WidgetRenderer:
             # Right-align the whole readout inside its reserved slot (side_by_side) so the network hugs
             # the hardware instead of floating left in the worst-case width. The slack lands on the left,
             # toward the app icons; both rows shift equally so the arrows stay mutually aligned.
-            max_unit_width = max(self.metrics.horizontalAdvance(up_unit), self.metrics.horizontalAdvance(dw_unit)) if not config.hide_unit_suffix else 0
+            if not config.hide_unit_suffix:
+                possible_units = get_unit_labels_for_type(
+                    self.i18n,
+                    config.unit_type,
+                    config.short_unit_labels,
+                )
+                max_unit_width = max(
+                    self.metrics.horizontalAdvance(unit)
+                    for unit in possible_units
+                )
+            else:
+                max_unit_width = 0
             # v2.1: reserve the identity badge slot (SSID pill / band pill / compound capsule) so
             # right-align accounts for it and the layout reserves the same amount. Matches
             # NetworkSpeedWidget._identity_reserve_px (same identity_layout geometry).
@@ -399,13 +419,39 @@ class WidgetRenderer:
             # banding can compare against the Mbps thresholds regardless of display unit.
             top_val, top_unit, top_is_upload = (dw_val, dw_unit, False) if config.swap_upload_download else (up_val, up_unit, True)
             top_raw = upload if top_is_upload else download
-            self._draw_speed_line(painter, top_is_upload, top_val, top_unit, top_raw, arrow_x, number_x, unit_x, top_y, config, number_area_width)
+            self._draw_speed_line(
+                painter,
+                top_is_upload,
+                top_val,
+                top_unit,
+                top_raw,
+                arrow_x,
+                number_x,
+                unit_x,
+                top_y,
+                config,
+                number_area_width,
+                max_unit_width,
+            )
 
             # Draw bottom line (download by default, upload when swapped)
             dw_y = top_y + line_height + vertical_gap
             bot_val, bot_unit, bot_is_upload = (up_val, up_unit, True) if config.swap_upload_download else (dw_val, dw_unit, False)
             bot_raw = upload if bot_is_upload else download
-            self._draw_speed_line(painter, bot_is_upload, bot_val, bot_unit, bot_raw, arrow_x, number_x, unit_x, dw_y, config, number_area_width)
+            self._draw_speed_line(
+                painter,
+                bot_is_upload,
+                bot_val,
+                bot_unit,
+                bot_raw,
+                arrow_x,
+                number_x,
+                unit_x,
+                dw_y,
+                config,
+                number_area_width,
+                max_unit_width,
+            )
 
             # v2.1: draw the network-identity badge to the right of the unit column, vertically centered.
             if identity_badge_w:
@@ -498,7 +544,21 @@ class WidgetRenderer:
         # matches the tray default at rest. (issue #153)
         return 'default'
 
-    def _draw_speed_line(self, painter: QPainter, is_upload: bool, val: str, unit: str, raw_bytes: float, arrow_x: int, number_x: int, unit_x: int, y: int, config: RenderConfig, number_area_width: int) -> None:
+    def _draw_speed_line(
+        self,
+        painter: QPainter,
+        is_upload: bool,
+        val: str,
+        unit: str,
+        raw_bytes: float,
+        arrow_x: int,
+        number_x: int,
+        unit_x: int,
+        y: int,
+        config: RenderConfig,
+        number_area_width: int,
+        unit_area_width: int,
+    ) -> None:
         """Unified helper to draw a single speed line (Arrow + Value + Unit) with stable alignment."""
         # Color coding - band by the canonical speed (see _speed_band), never the
         # on-screen number, so banding is correct in every display unit.
@@ -535,9 +595,14 @@ class WidgetRenderer:
         aligned_number_x = number_x + (number_area_width - val_width)
         painter.drawText(int(aligned_number_x), y, val)
         
-        # 3. Draw Unit
+        # 3. Draw Unit. The layout reserves the widest unit label so
+        # Network keeps a stable width. Right-align the current unit inside
+        # that fixed cell so a shorter label (for example Gbps vs Mbps)
+        # cannot turn the unused width into inter-section spacing.
         if not config.hide_unit_suffix:
-            painter.drawText(unit_x, y, unit)
+            unit_width = self.metrics.horizontalAdvance(unit)
+            aligned_unit_x = unit_x + unit_area_width - unit_width
+            painter.drawText(aligned_unit_x, y, unit)
 
 
 
