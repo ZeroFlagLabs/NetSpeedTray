@@ -72,6 +72,7 @@
     "WIDGET_SECTION_SPACING_LABEL": "Abschnittsabstand",
     "WIDGET_SECTION_SPACING_DEFAULT": "Standard",
     "WIDGET_SECTION_SPACING_CUSTOM": "Benutzerdefiniert",
+    "WIDGET_SECTION_DIVIDERS_LABEL": "Abschnittstrennlinien",
     "HARDWARE_GRAPH_NOTE": "Hardware-Grafiken nutzen die gleiche Deckkraft und Zeitspanne wie die Netzwerkgrafik.",
     "GRAPH_CPU_UTIL_AXIS_LABEL": "CPU-Auslastung (%)",
     "GRAPH_GPU_UTIL_AXIS_LABEL": "GPU-Auslastung (%)",

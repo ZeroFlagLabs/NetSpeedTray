@@ -72,6 +72,7 @@
     "WIDGET_SECTION_SPACING_LABEL": "Bölüm aralığı",
     "WIDGET_SECTION_SPACING_DEFAULT": "Varsayılan",
     "WIDGET_SECTION_SPACING_CUSTOM": "Özel",
+    "WIDGET_SECTION_DIVIDERS_LABEL": "Bölüm ayırıcıları",
     "HARDWARE_GRAPH_NOTE": "Donanım grafikleri, ağ grafikleriyle aynı opaklık ve zaman aralığını kullanır.",
     "GRAPH_CPU_UTIL_AXIS_LABEL": "CPU Kullanımı (%)",
     "GRAPH_GPU_UTIL_AXIS_LABEL": "GPU Kullanımı (%)",

@@ -85,3 +85,16 @@ def test_returning_to_default_resets_custom_spacing_to_ten(page):
     assert page.section_spacing_value.value() == 10
     assert page.section_spacing_value.isEnabled() is False
     assert page.get_settings()["widget_section_spacing"] is None
+
+
+def test_section_dividers_default_off_and_round_trip(page):
+    """Section dividers are opt-in and the Widget page preserves the setting."""
+    page.load_settings({})
+
+    assert page.section_dividers.isChecked() is False
+    assert page.get_settings()["widget_section_dividers"] is False
+
+    page.load_settings({"widget_section_dividers": True})
+
+    assert page.section_dividers.isChecked() is True
+    assert page.get_settings()["widget_section_dividers"] is True

@@ -72,6 +72,7 @@
     "WIDGET_SECTION_SPACING_LABEL": "Espacement des sections",
     "WIDGET_SECTION_SPACING_DEFAULT": "Par défaut",
     "WIDGET_SECTION_SPACING_CUSTOM": "Personnalisé",
+    "WIDGET_SECTION_DIVIDERS_LABEL": "Séparateurs de section",
     "HARDWARE_GRAPH_NOTE": "Les graphiques matériels utilisent la même opacité et le même intervalle de temps que le graphique réseau.",
     "GRAPH_CPU_UTIL_AXIS_LABEL": "Utilisation CPU (%)",
     "GRAPH_GPU_UTIL_AXIS_LABEL": "Utilisation GPU (%)",

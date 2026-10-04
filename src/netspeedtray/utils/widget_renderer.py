@@ -108,6 +108,7 @@ class RenderConfig:
     widget_display_mode: str = "network_only"
     widget_display_order: List[str] = field(default_factory=lambda: ["network", "cpu", "gpu"])
     widget_section_spacing: Optional[int] = None
+    widget_section_dividers: bool = False
     show_hardware_temps: bool = False
     show_hardware_power: bool = False
 
@@ -195,6 +196,9 @@ class RenderConfig:
                         and not isinstance(config.get('widget_section_spacing'), bool)
                     )
                     else None
+                ),
+                widget_section_dividers=bool(
+                    config.get('widget_section_dividers', False)
                 ),
                 show_hardware_temps=bool(config.get('show_hardware_temps', False)),
                 show_hardware_power=bool(config.get('show_hardware_power', False))
@@ -298,6 +302,37 @@ class WidgetRenderer:
         painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, message)
         painter.restore()
 
+
+    def draw_section_divider(
+        self,
+        painter: QPainter,
+        x: float,
+        height: int,
+    ) -> None:
+        """Draw a crisp divider between neighbouring widget sections."""
+        divider_height = min(
+            max(1, height - 4),
+            (2 * self.metrics.height()) + 1,
+        )
+        top = max(0, (height - divider_height) // 2)
+        bottom = min(height - 1, top + divider_height - 1)
+
+        # The glyphs' visual mass sits slightly below the geometric centre.
+        # Keep the lower edge unchanged and trim the top to match it optically.
+        top = min(bottom, top + 2)
+
+        line_x = int(x + 0.5)
+
+        divider_color = QColor(self.default_color)
+        divider_color.setAlpha(128)
+
+        painter.save()
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
+        painter.fillRect(
+            QRect(line_x, top, 1, bottom - top + 1),
+            divider_color,
+        )
+        painter.restore()
 
     def draw_background(self, painter: QPainter, rect: QRect, config: RenderConfig) -> None:
         """Draws the widget background. Ensures at least minimal opacity for hit testing."""
@@ -834,6 +869,24 @@ class WidgetRenderer:
                 memory_row_width = 0
 
             seg_w = max(stat_col, memory_row_width)
+
+            # In Stacked mode, Position 2 (CPU/GPU) and Position 3
+            # (RAM/VRAM) live inside this same hardware renderer. Draw the
+            # divider at the centre of the spacing already separating them.
+            if (
+                getattr(config, "widget_section_dividers", False)
+                and getattr(config, "stack_hardware_stats", False)
+                and inline_mem
+                and any_mem
+            ):
+                divider_x = (
+                    current_x
+                    + label_col
+                    + pct_col
+                    + suffix_col
+                    + (sep_col / 2.0)
+                )
+                self.draw_section_divider(painter, divider_x, height)
 
             y = top_y
             for r in rows:

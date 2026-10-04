@@ -72,6 +72,7 @@
     "WIDGET_SECTION_SPACING_LABEL": "Sectieafstand",
     "WIDGET_SECTION_SPACING_DEFAULT": "Standaard",
     "WIDGET_SECTION_SPACING_CUSTOM": "Aangepast",
+    "WIDGET_SECTION_DIVIDERS_LABEL": "Sectiescheidingen",
     "HARDWARE_GRAPH_NOTE": "Hardwaregrafieken gebruiken dezelfde transparantie en tijdsduur als de netwerkgrafiek.",
     "GRAPH_CPU_UTIL_AXIS_LABEL": "CPU-gebruik (%)",
     "GRAPH_GPU_UTIL_AXIS_LABEL": "GPU-gebruik (%)",

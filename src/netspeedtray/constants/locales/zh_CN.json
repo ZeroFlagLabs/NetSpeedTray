@@ -72,6 +72,7 @@
     "WIDGET_SECTION_SPACING_LABEL": "区段间距",
     "WIDGET_SECTION_SPACING_DEFAULT": "默认",
     "WIDGET_SECTION_SPACING_CUSTOM": "自定义",
+    "WIDGET_SECTION_DIVIDERS_LABEL": "区段分隔线",
     "HARDWARE_GRAPH_NOTE": "硬件图表与网络图表使用相同的不透明度与时间范围。",
     "GRAPH_CPU_UTIL_AXIS_LABEL": "CPU 使用率 (%)",
     "GRAPH_GPU_UTIL_AXIS_LABEL": "GPU 使用率 (%)",

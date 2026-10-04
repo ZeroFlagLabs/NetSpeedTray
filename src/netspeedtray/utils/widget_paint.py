@@ -178,6 +178,8 @@ def _draw_side_by_side(painter: QPainter, renderer: WidgetRenderer, width: int, 
 
     net_w = network_width if network_width is not None else width
     current_x = 0
+    previous_visible_right = None
+
     for index, key in enumerate(active_keys):
         if key == "network":
             if config.graph_enabled:
@@ -254,6 +256,30 @@ def _draw_side_by_side(painter: QPainter, renderer: WidgetRenderer, width: int, 
             renderer.draw_hardware_stats(painter, metrics.cpu_usage, metrics.gpu_usage, width, height, config,
                                          metrics.cpu_temp, metrics.gpu_temp, ram, vram, layout,
                                          x_offset=current_x, cpu_power=metrics.cpu_power, gpu_power=metrics.gpu_power)
+
+        # Draw a divider halfway between the actual visible edges of
+        # neighbouring display positions. Hardware renderers reserve a small
+        # left margin internally; network bounds already begin at visible text.
+        section_rect = renderer.get_last_text_rect()
+        render_margin = constants.renderer.TEXT_MARGIN
+
+        current_visible_left = (
+            section_rect.x()
+            if key == "network"
+            else section_rect.x() + render_margin
+        )
+        current_visible_right = section_rect.x() + section_rect.width()
+
+        if (
+            previous_visible_right is not None
+            and getattr(config, "widget_section_dividers", False)
+        ):
+            divider_x = (
+                previous_visible_right + current_visible_left
+            ) / 2.0
+            renderer.draw_section_divider(painter, divider_x, height)
+
+        previous_visible_right = current_visible_right
 
         # Only a boundary between two active sections needs spacing.
         if index < len(active_keys) - 1:

@@ -95,6 +95,15 @@ class WidgetPage(QWidget):
 
         layout.addWidget(SettingCard(self.i18n.WIDGET_SECTION_SPACING_LABEL, control=spacing_control))
 
+        self.section_dividers = Win11Toggle(label_text="")
+        self.section_dividers.toggled.connect(self.on_change)
+        layout.addWidget(
+            SettingCard(
+                self.i18n.WIDGET_SECTION_DIVIDERS_LABEL,
+                control=self.section_dividers,
+            )
+        )
+
         # --- Behavior (was on the General page) ---
         layout.addWidget(section_header(self.i18n.BEHAVIOR_GROUP_TITLE))
         self.free_move = Win11Toggle(label_text="")
@@ -211,6 +220,10 @@ class WidgetPage(QWidget):
         self.section_spacing_value.blockSignals(False)
         self.section_spacing_value.setEnabled(custom_spacing)
 
+        self.section_dividers.setChecked(
+            config.get("widget_section_dividers", False)
+        )
+
         self.free_move.setChecked(config.get("free_move", False))
         self.free_float.setChecked(config.get("free_float", True))
         self.keep_visible_fullscreen.setChecked(
@@ -228,6 +241,7 @@ class WidgetPage(QWidget):
                 if self.section_spacing_mode.currentData() == "custom"
                 else None
             ),
+            "widget_section_dividers": self.section_dividers.isChecked(),
             "free_move": self.free_move.isChecked(),
             "free_float": self.free_float.isChecked(),
             "keep_visible_fullscreen": self.keep_visible_fullscreen.isChecked(),
