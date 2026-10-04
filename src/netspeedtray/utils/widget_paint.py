@@ -125,20 +125,53 @@ def _draw_side_by_side(painter: QPainter, renderer: WidgetRenderer, width: int, 
     active_keys: List[str] = []
     stack_hw = getattr(config, "stack_hardware_stats", False)
 
-    for k in config.widget_display_order:
-        if k == "network":
-            active_keys.append(k)
-        elif k == "cpu" and config.monitor_cpu_enabled:
-            if stack_hw and config.monitor_gpu_enabled:
-                if "hardware" not in active_keys:
-                    active_keys.append("hardware")
+    if (
+        stack_hw
+        and config.monitor_cpu_enabled
+        and config.monitor_gpu_enabled
+    ):
+        # CPU and GPU are rows in the same stats column when stacked, while
+        # RAM/VRAM form the third visual column. Keep Network's configured
+        # position relative to those two columns instead of collapsing the
+        # whole thing into one indivisible "hardware" segment.
+        order = list(config.widget_display_order)
+        has_memory = (
+            config.monitor_ram_enabled
+            or config.monitor_vram_enabled
+        )
+
+        if "network" not in order:
+            active_keys.append("stats")
+            if has_memory:
+                active_keys.append("memory")
+        else:
+            network_index = order.index("network")
+            hardware_indices = [
+                order.index(key)
+                for key in ("cpu", "gpu")
+                if key in order
+            ]
+
+            if not hardware_indices:
+                active_keys.append("network")
+            elif not has_memory:
+                if network_index < min(hardware_indices):
+                    active_keys.extend(["network", "stats"])
+                else:
+                    active_keys.extend(["stats", "network"])
+            elif network_index < min(hardware_indices):
+                active_keys.extend(["network", "stats", "memory"])
+            elif network_index > max(hardware_indices):
+                active_keys.extend(["stats", "memory", "network"])
             else:
+                active_keys.extend(["stats", "network", "memory"])
+    else:
+        for k in config.widget_display_order:
+            if k == "network":
+                active_keys.append(k)
+            elif k == "cpu" and config.monitor_cpu_enabled:
                 active_keys.append("cpu")
-        elif k == "gpu" and config.monitor_gpu_enabled:
-            if stack_hw and config.monitor_cpu_enabled:
-                if "hardware" not in active_keys:
-                    active_keys.append("hardware")
-            else:
+            elif k == "gpu" and config.monitor_gpu_enabled:
                 active_keys.append("gpu")
     if not active_keys:
         active_keys = ["network"]
@@ -169,6 +202,52 @@ def _draw_side_by_side(painter: QPainter, renderer: WidgetRenderer, width: int, 
             renderer.draw_hardware_stats(painter, None, metrics.gpu_usage, width, height, config,
                                          None, metrics.gpu_temp, None, vram, layout,
                                          x_offset=current_x, gpu_power=metrics.gpu_power)
+        elif key == "stats":
+            renderer.draw_hardware_stats(
+                painter,
+                metrics.cpu_usage,
+                metrics.gpu_usage,
+                width,
+                height,
+                config,
+                metrics.cpu_temp,
+                metrics.gpu_temp,
+                None,
+                None,
+                layout,
+                x_offset=current_x,
+                cpu_power=metrics.cpu_power,
+                gpu_power=metrics.gpu_power,
+                section="stats",
+            )
+        elif key == "memory":
+            ram = (
+                (metrics.ram_used, metrics.ram_total)
+                if config.monitor_ram_enabled
+                else None
+            )
+            vram = (
+                (metrics.vram_used, metrics.vram_total)
+                if config.monitor_vram_enabled
+                else None
+            )
+            renderer.draw_hardware_stats(
+                painter,
+                metrics.cpu_usage,
+                metrics.gpu_usage,
+                width,
+                height,
+                config,
+                metrics.cpu_temp,
+                metrics.gpu_temp,
+                ram,
+                vram,
+                layout,
+                x_offset=current_x,
+                cpu_power=metrics.cpu_power,
+                gpu_power=metrics.gpu_power,
+                section="memory",
+            )
         elif key == "hardware":
             ram = (metrics.ram_used, metrics.ram_total) if config.monitor_ram_enabled else None
             vram = (metrics.vram_used, metrics.vram_total) if config.monitor_vram_enabled else None

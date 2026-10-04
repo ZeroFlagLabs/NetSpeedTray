@@ -371,7 +371,30 @@ class WidgetLayoutManager:
                         gpu_width += margin # Reclaim Left Margin offset budget
                             
                     if stack_hw and monitor_cpu and monitor_gpu:
-                        calculated_width_accum += max(cpu_width, gpu_width)
+                        # Stacked CPU/GPU now has two independently positioned
+                        # visual sections:
+                        #
+                        #     stats | memory
+                        #
+                        # Network may occupy position 1, 2 or 3 between/around
+                        # them, so reserve these widths separately instead of
+                        # treating the whole hardware area as one block.
+                        stats_width = (
+                            label_offset
+                            + self.metrics.horizontalAdvance("100%")
+                            + hw_suffix_width
+                            + margin
+                        )
+
+                        memory_width = 0
+                        if (monitor_ram or monitor_vram) and mem_ref:
+                            memory_width = (
+                                mem_label_w
+                                + self.metrics.horizontalAdvance(mem_ref)
+                                + margin
+                            )
+
+                        calculated_width_accum += stats_width + memory_width
                     else:
                         calculated_width_accum += cpu_width + gpu_width
                         
@@ -398,20 +421,52 @@ class WidgetLayoutManager:
                     # segment renderers already contribute internal edge
                     # margins, so only reserve the remaining positioning gap.
                     active_layout_keys = []
-                    for key in display_order:
-                        if key == "network":
-                            active_layout_keys.append("network")
-                        elif key == "cpu" and monitor_cpu:
-                            if stack_hw and monitor_gpu:
-                                if "hardware" not in active_layout_keys:
-                                    active_layout_keys.append("hardware")
+
+                    if stack_hw and monitor_cpu and monitor_gpu:
+                        has_memory = monitor_ram or monitor_vram
+
+                        if "network" not in display_order:
+                            active_layout_keys.append("stats")
+                            if has_memory:
+                                active_layout_keys.append("memory")
+                        else:
+                            network_index = display_order.index("network")
+                            hardware_indices = [
+                                display_order.index(key)
+                                for key in ("cpu", "gpu")
+                                if key in display_order
+                            ]
+
+                            if not hardware_indices:
+                                active_layout_keys.append("network")
+                            elif not has_memory:
+                                if network_index < min(hardware_indices):
+                                    active_layout_keys.extend(
+                                        ["network", "stats"]
+                                    )
+                                else:
+                                    active_layout_keys.extend(
+                                        ["stats", "network"]
+                                    )
+                            elif network_index < min(hardware_indices):
+                                active_layout_keys.extend(
+                                    ["network", "stats", "memory"]
+                                )
+                            elif network_index > max(hardware_indices):
+                                active_layout_keys.extend(
+                                    ["stats", "memory", "network"]
+                                )
                             else:
+                                active_layout_keys.extend(
+                                    ["stats", "network", "memory"]
+                                )
+                    else:
+                        for key in display_order:
+                            if key == "network":
+                                active_layout_keys.append("network")
+                            elif key == "cpu" and monitor_cpu:
                                 active_layout_keys.append("cpu")
-                        elif key == "gpu" and monitor_gpu:
-                            if stack_hw and monitor_cpu:
-                                if "hardware" not in active_layout_keys:
-                                    active_layout_keys.append("hardware")
-                            else:
+                            elif key == "gpu" and monitor_gpu:
                                 active_layout_keys.append("gpu")
 
                     margin = constants.renderer.TEXT_MARGIN

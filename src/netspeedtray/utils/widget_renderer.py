@@ -636,7 +636,8 @@ class WidgetRenderer:
                            ram_info: Optional[Tuple[float, float]] = None,
                            vram_info: Optional[Tuple[float, float]] = None,
                            layout_mode: str = 'vertical', x_offset: int = 0, fixed_width: Optional[int] = None,
-                           cpu_power: Optional[float] = None, gpu_power: Optional[float] = None) -> None:
+                           cpu_power: Optional[float] = None, gpu_power: Optional[float] = None,
+                           section: Optional[str] = None) -> None:
         """Draws CPU and/or GPU utilization statistics with optional temperature, power, and memory."""
         try:
             order = getattr(config, 'widget_display_order', ["network", "cpu", "gpu"])
@@ -701,6 +702,15 @@ class WidgetRenderer:
                              'suffix': self._build_hw_suffix(temp, power, show_temps, show_power),
                              'mem': mem_text, 'mem_label': mem_label if mem_text else ''})
 
+            # Stacked mode can split the hardware block into two independently
+            # positioned visual sections so Network can sit between them:
+            #
+            #     CPU/GPU stats | Network | RAM/VRAM
+            #
+            # section=None preserves the existing combined behaviour everywhere
+            # else.
+            render_memory = section != "stats"
+
             label_col = (max(self.metrics.horizontalAdvance(r['label']) for r in rows) + 4) if style == "text" else 14
             pct_col = self.metrics.horizontalAdvance("100%")   # the >3d percent is already a fixed 4-char field
             if show_temps and show_power:
@@ -713,7 +723,7 @@ class WidgetRenderer:
                 suffix_ref = ""
             suffix_col = (sp + self.metrics.horizontalAdvance(suffix_ref)) if suffix_ref else 0
 
-            any_mem = any(r['mem'] for r in rows)
+            any_mem = render_memory and any(r['mem'] for r in rows)
             totals = [r['total'] for r in rows if r['total'] > 0]
             t = max(totals) if totals else 0.0
             mem_num_col = self.metrics.horizontalAdvance(f"{t:.1f}/{t:.1f}G" if t > 0 else "9999G") if any_mem else 0
@@ -750,6 +760,53 @@ class WidgetRenderer:
             # so the numbers stay aligned across rows. Zero when off: the widget keeps its width.
             show_mem_labels = bool(getattr(config, 'show_memory_labels', False))
             mem_label_col = memory_label_width(self.metrics) if (show_mem_labels and any_mem) else 0
+
+            # When memory is its own stacked visual section, draw only the
+            # RAM/VRAM rows. The external section-spacing code supplies the
+            # gap, so there is deliberately no inline sep_col here.
+            if section == "memory":
+                memory_rows = [r for r in rows if r['mem']]
+
+                if not memory_rows:
+                    self._last_text_rect = QRect(x_offset, 0, 0, 0)
+                    return
+
+                total_height = line_height * len(memory_rows)
+                top_y = int((height - total_height) / 2 + ascent)
+                current_x = x_offset + margin
+                memory_width = mem_label_col + mem_num_col
+
+                y = top_y
+                for r in memory_rows:
+                    if mem_label_col:
+                        self._draw_memory_label(
+                            painter,
+                            current_x,
+                            y,
+                            r,
+                        )
+                        number_col_x = current_x + mem_label_col
+                    else:
+                        number_col_x = current_x
+
+                    num_x = (
+                        number_col_x
+                        + mem_num_col
+                        - self.metrics.horizontalAdvance(r['mem'])
+                    )
+                    painter.setPen(self.default_color)
+                    painter.drawText(num_x, y, r['mem'])
+                    y += line_height
+
+                self._last_text_rect = QRect(
+                    x_offset,
+                    top_y,
+                    memory_width + margin,
+                    total_height,
+                )
+                self._extend_content_bounds(self._last_text_rect)
+                return
+
             inline_mem = is_compact
             mem_col = (sep_col + mem_label_col + mem_num_col) if (any_mem and inline_mem) else 0
 
