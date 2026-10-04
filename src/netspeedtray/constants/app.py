@@ -11,7 +11,7 @@ class AppConstants:
     VERSION: Final[str] = netspeedtray.__version__
     MUTEX_NAME: Final[str] = "Global\\NetSpeedTray_SingleInstanceMutex"
     ICON_FILENAME: Final[str] = "NetSpeedTray.ico"
-    GITHUB_OWNER: Final[str] = "erez-c137"
+    GITHUB_OWNER: Final[str] = "ZeroFlagLabs"
     GITHUB_REPO: Final[str] = "NetSpeedTray"
     # Marker file the portable ZIP ships next to the EXE (added at package time in build.bat, just
     # before Compress-Archive). Its presence is how the app knows it's the portable build and should
