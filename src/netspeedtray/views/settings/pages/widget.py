@@ -63,6 +63,13 @@ class WidgetPage(QWidget):
             layout.addWidget(SettingCard(getattr(self.i18n, f"ORDER_POSITION_{i+1}"), control=combo))
             self.pos_combos.append(combo)
 
+        self.space_before_hardware_units = Win11Toggle(label_text="")
+        self.space_before_hardware_units.toggled.connect(self.on_change)
+        layout.addWidget(SettingCard(
+            self.i18n.SPACE_BEFORE_HARDWARE_UNITS_LABEL,
+            control=self.space_before_hardware_units,
+        ))
+
         # --- Behavior (was on the General page) ---
         layout.addWidget(section_header(self.i18n.BEHAVIOR_GROUP_TITLE))
         self.free_move = Win11Toggle(label_text="")
@@ -136,6 +143,10 @@ class WidgetPage(QWidget):
             if idx >= 0:
                 combo.setCurrentIndex(idx)
 
+        self.space_before_hardware_units.setChecked(
+            config.get("space_before_hardware_units", False)
+        )
+
         self.free_move.setChecked(config.get("free_move", False))
         self.free_float.setChecked(config.get("free_float", True))
         self.keep_visible_fullscreen.setChecked(
@@ -148,6 +159,7 @@ class WidgetPage(QWidget):
             "widget_display_mode": "side_by_side" if mode == "side_by_stack" else mode,
             "stack_hardware_stats": mode == "side_by_stack",
             "widget_display_order": order,
+            "space_before_hardware_units": self.space_before_hardware_units.isChecked(),
             "free_move": self.free_move.isChecked(),
             "free_float": self.free_float.isChecked(),
             "keep_visible_fullscreen": self.keep_visible_fullscreen.isChecked(),

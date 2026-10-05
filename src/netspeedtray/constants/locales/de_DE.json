@@ -78,6 +78,7 @@
     "LANGUAGE_LABEL": "Sprache",
     "UPDATE_INTERVAL_LABEL": "Aktualisierungsintervall:",
     "START_WITH_WINDOWS_LABEL": "Mit Windows starten",
+    "SPACE_BEFORE_HARDWARE_UNITS_LABEL": "Abstand vor Hardware-Einheiten",
     "FREE_MOVE_LABEL": "Frei beweglich (kein Einrasten)",
     "FREE_FLOAT_LABEL": "Auf einem Monitor ohne Taskleiste frei schweben",
     "KEEP_VISIBLE_FULLSCREEN_LABEL": "Im Vollbild sichtbar halten",

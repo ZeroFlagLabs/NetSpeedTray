@@ -78,6 +78,7 @@
     "LANGUAGE_LABEL": "Langue",
     "UPDATE_INTERVAL_LABEL": "Intervalle de Mise à Jour :",
     "START_WITH_WINDOWS_LABEL": "Lancer avec Windows",
+    "SPACE_BEFORE_HARDWARE_UNITS_LABEL": "Espace avant les unit?s mat?rielles",
     "FREE_MOVE_LABEL": "Déplacement Libre (Pas de Collage)",
     "FREE_FLOAT_LABEL": "Affichage flottant sans barre des tâches",
     "KEEP_VISIBLE_FULLSCREEN_LABEL": "Rester visible en plein écran",

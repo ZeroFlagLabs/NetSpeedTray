@@ -126,6 +126,7 @@ class ConfigConstants:
     # #250: RAM / VRAM labels on the memory values. Off by default so no existing widget
     # changes width on upgrade.
     DEFAULT_SHOW_MEMORY_LABELS: Final[bool] = False
+    DEFAULT_SPACE_BEFORE_HARDWARE_UNITS: Final[bool] = False
     DEFAULT_SHOW_HARDWARE_TEMPS: Final[bool] = True
     DEFAULT_SHOW_HARDWARE_POWER: Final[bool] = False
     DEFAULT_STACK_HARDWARE_STATS: Final[bool] = True
@@ -226,6 +227,7 @@ class ConfigConstants:
         "monitor_ram_enabled": DEFAULT_MONITOR_RAM_ENABLED,
         "monitor_vram_enabled": DEFAULT_MONITOR_VRAM_ENABLED,
         "show_memory_labels": DEFAULT_SHOW_MEMORY_LABELS,
+        "space_before_hardware_units": DEFAULT_SPACE_BEFORE_HARDWARE_UNITS,
         "show_hardware_temps": DEFAULT_SHOW_HARDWARE_TEMPS,
         "show_hardware_power": DEFAULT_SHOW_HARDWARE_POWER,
         # Record cheap CPU/GPU/RAM utilization to the DB always (not just while the widget displays it),
@@ -369,6 +371,7 @@ class ConfigConstants:
         "monitor_ram_enabled": {"type": bool, "default": DEFAULT_MONITOR_RAM_ENABLED},
         "monitor_vram_enabled": {"type": bool, "default": DEFAULT_MONITOR_VRAM_ENABLED},
         "show_memory_labels": {"type": bool, "default": DEFAULT_SHOW_MEMORY_LABELS},
+        "space_before_hardware_units": {"type": bool, "default": DEFAULT_SPACE_BEFORE_HARDWARE_UNITS},
         "show_hardware_temps": {"type": bool, "default": DEFAULT_SHOW_HARDWARE_TEMPS},
         "record_hardware_history": {"type": bool, "default": True},
         "latency_enabled": {"type": bool, "default": True},

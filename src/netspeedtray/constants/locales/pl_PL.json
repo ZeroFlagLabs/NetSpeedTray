@@ -78,6 +78,7 @@
     "LANGUAGE_LABEL": "Język",
     "UPDATE_INTERVAL_LABEL": "Interwał aktualizacji:",
     "START_WITH_WINDOWS_LABEL": "Uruchamiaj z systemem Windows",
+    "SPACE_BEFORE_HARDWARE_UNITS_LABEL": "Odst?p przed jednostkami sprz?towymi",
     "FREE_MOVE_LABEL": "Swobodne przesuwanie (bez przyciągania)",
     "FREE_FLOAT_LABEL": "Pływający widżet na ekranie bez paska zadań",
     "KEEP_VISIBLE_FULLSCREEN_LABEL": "Pozostań widoczny w trybie pełnoekranowym",

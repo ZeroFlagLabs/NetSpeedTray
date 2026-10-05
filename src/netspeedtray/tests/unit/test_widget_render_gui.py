@@ -173,6 +173,113 @@ def test_hw_percent_content_width_stable_across_digits(q_app):
     assert w9 == w10 == w100, f"CPU% segment width still jitters: 9->{w9}, 10->{w10}, 100->{w100}"
 
 
+
+def _hardware_text_calls(renderer, **kwargs):
+    """Capture (x, y, text) calls made by draw_hardware_stats."""
+    from unittest.mock import patch
+
+    img = QImage(360, 70, QImage.Format.Format_ARGB32)
+    img.fill(QColor(0, 0, 0, 0))
+    painter = QPainter(img)
+
+    calls = []
+    real = QPainter.drawText
+
+    def spy(self, *args):
+        if (
+            len(args) >= 3
+            and isinstance(args[0], (int, float))
+            and isinstance(args[1], (int, float))
+            and isinstance(args[-1], str)
+        ):
+            calls.append((args[0], args[1], args[-1]))
+        return real(self, *args)
+
+    with patch.object(QPainter, "drawText", spy):
+        renderer.draw_hardware_stats(
+            painter,
+            width=360,
+            height=70,
+            config=renderer.config,
+            **kwargs,
+        )
+
+    painter.end()
+    return calls
+
+
+def test_hardware_unit_spacing_uses_network_value_unit_gap(q_app):
+    """The opt-in hardware gap must be the exact same px gap used by Network values."""
+    cfg = dict(constants.config.defaults.DEFAULT_CONFIG)
+    cfg.update({
+        "hardware_label_style": "text",
+        "monitor_cpu_enabled": True,
+        "monitor_ram_enabled": True,
+        "space_before_hardware_units": True,
+        "show_hardware_temps": False,
+    })
+
+    r = WidgetRenderer(cfg, I18nStrings("en_US"))
+    calls = _hardware_text_calls(
+        r,
+        cpu_usage=50.0,
+        gpu_usage=None,
+        ram_info=(11.8, 15.7),
+        layout_mode="horizontal",
+    )
+
+    by_text = {}
+    for x, y, value in calls:
+        by_text.setdefault(value, []).append((x, y))
+
+    assert "50" in by_text
+    assert "%" in by_text
+    assert "11.8/15.7" in by_text
+    assert "G" in by_text
+
+    pct_x = by_text["50"][0][0]
+    pct_unit_x = by_text["%"][0][0]
+    assert (
+        pct_unit_x - (pct_x + r.metrics.horizontalAdvance("50"))
+        == constants.renderer.VALUE_UNIT_GAP
+    )
+
+    mem_x = by_text["11.8/15.7"][0][0]
+    mem_unit_x = by_text["G"][0][0]
+    assert (
+        mem_unit_x - (mem_x + r.metrics.horizontalAdvance("11.8/15.7"))
+        == constants.renderer.VALUE_UNIT_GAP
+    )
+
+
+def test_hardware_unit_spacing_off_preserves_joined_values(q_app):
+    """Default Off preserves the existing compact hardware formatting."""
+    cfg = dict(constants.config.defaults.DEFAULT_CONFIG)
+    cfg.update({
+        "hardware_label_style": "text",
+        "monitor_cpu_enabled": True,
+        "monitor_ram_enabled": True,
+        "space_before_hardware_units": False,
+        "show_hardware_temps": False,
+    })
+
+    r = WidgetRenderer(cfg, I18nStrings("en_US"))
+    calls = _hardware_text_calls(
+        r,
+        cpu_usage=50.0,
+        gpu_usage=None,
+        ram_info=(11.8, 15.7),
+        layout_mode="horizontal",
+    )
+
+    drawn = [value for _, _, value in calls]
+
+    assert "50%" in drawn
+    assert "11.8/15.7G" in drawn
+    assert "%" not in drawn
+    assert "G" not in drawn
+
+
 # --------------------------------------------------------------------------- #250: the separator
 
 def _drawn_strings(renderer, **kwargs) -> list:

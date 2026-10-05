@@ -78,6 +78,7 @@
     "LANGUAGE_LABEL": "Taal",
     "UPDATE_INTERVAL_LABEL": "Update-interval:",
     "START_WITH_WINDOWS_LABEL": "Starten met Windows",
+    "SPACE_BEFORE_HARDWARE_UNITS_LABEL": "Ruimte v??r hardware-eenheden",
     "FREE_MOVE_LABEL": "Vrij bewegen (geen uitlijning)",
     "FREE_FLOAT_LABEL": "Zweven op een beeldscherm zonder taakbalk",
     "KEEP_VISIBLE_FULLSCREEN_LABEL": "Zichtbaar houden in volledig scherm",

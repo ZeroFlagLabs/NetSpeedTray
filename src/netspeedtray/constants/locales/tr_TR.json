@@ -78,6 +78,7 @@
     "LANGUAGE_LABEL": "Dil",
     "UPDATE_INTERVAL_LABEL": "Güncelleme Aralığı:",
     "START_WITH_WINDOWS_LABEL": "Windows ile birlikte başlat",
+    "SPACE_BEFORE_HARDWARE_UNITS_LABEL": "Donan?m Birimlerinden ?nce Bo?luk",
     "FREE_MOVE_LABEL": "Serbest Taşıma (Hizalama Yok)",
     "FREE_FLOAT_LABEL": "Görev çubuğu olmayan bir ekranda serbestçe hareket ettir",
     "KEEP_VISIBLE_FULLSCREEN_LABEL": "Tam Ekranda Görünür Tut",

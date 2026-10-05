@@ -78,6 +78,7 @@
     "LANGUAGE_LABEL": "言語",
     "UPDATE_INTERVAL_LABEL": "更新間隔 :",
     "START_WITH_WINDOWS_LABEL": "Windows 起動時に実行",
+    "SPACE_BEFORE_HARDWARE_UNITS_LABEL": "????????????????",
     "FREE_MOVE_LABEL": "自由移動 (スナップ無効)",
     "FREE_FLOAT_LABEL": "タスクバーのないディスプレイではフローティング表示する",
     "KEEP_VISIBLE_FULLSCREEN_LABEL": "フルスクリーン時も表示を維持",

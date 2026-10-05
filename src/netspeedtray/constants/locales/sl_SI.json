@@ -78,6 +78,7 @@
     "LANGUAGE_LABEL": "Jezik",
     "UPDATE_INTERVAL_LABEL": "Interval posodabljanja:",
     "START_WITH_WINDOWS_LABEL": "Zaženi z zagonom sistema Windows",
+    "SPACE_BEFORE_HARDWARE_UNITS_LABEL": "Razmik pred enotami strojne opreme",
     "FREE_MOVE_LABEL": "Prosto premikanje (brez pripenjanja)",
     "FREE_FLOAT_LABEL": "Prosto lebdenje na zaslonu brez opravilne vrstice",
     "KEEP_VISIBLE_FULLSCREEN_LABEL": "Ohrani vidno v celozaslonskem načinu",

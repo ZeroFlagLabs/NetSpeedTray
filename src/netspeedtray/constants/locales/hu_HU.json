@@ -78,6 +78,7 @@
     "LANGUAGE_LABEL": "Nyelv",
     "UPDATE_INTERVAL_LABEL": "Frissítési időköz:",
     "START_WITH_WINDOWS_LABEL": "Indítás a Windowszal",
+    "SPACE_BEFORE_HARDWARE_UNITS_LABEL": "T?rk?z a hardveregys?gek el?tt",
     "FREE_MOVE_LABEL": "Szabad mozgatás (illesztés nélkül)",
     "FREE_FLOAT_LABEL": "Lebegtetés tálca nélküli kijelzőn",
     "KEEP_VISIBLE_FULLSCREEN_LABEL": "Maradjon látható teljes képernyőn",

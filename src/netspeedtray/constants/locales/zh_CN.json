@@ -78,6 +78,7 @@
     "LANGUAGE_LABEL": "语言",
     "UPDATE_INTERVAL_LABEL": "刷新间隔:",
     "START_WITH_WINDOWS_LABEL": "开机自启",
+    "SPACE_BEFORE_HARDWARE_UNITS_LABEL": "?????????",
     "FREE_MOVE_LABEL": "自由移动（无吸附）",
     "FREE_FLOAT_LABEL": "在无任务栏的显示器上悬浮显示",
     "KEEP_VISIBLE_FULLSCREEN_LABEL": "全屏时保持可见",
