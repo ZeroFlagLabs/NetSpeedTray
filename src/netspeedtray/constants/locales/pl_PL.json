@@ -83,6 +83,8 @@
     "UPDATE_INTERVAL_LABEL": "Interwał aktualizacji:",
     "START_WITH_WINDOWS_LABEL": "Uruchamiaj z systemem Windows",
     "FREE_MOVE_LABEL": "Swobodne przesuwanie (bez przyciągania)",
+    "LOCK_POSITION_LABEL": "Zablokuj pozycj? swobodnego przesuwania",
+    "LOCK_POSITION_DESCRIPTION": "Zapobiega przeci?ganiu wid?etu, gdy w??czone jest swobodne przesuwanie.",
     "FREE_FLOAT_LABEL": "Pływający widżet na ekranie bez paska zadań",
     "KEEP_VISIBLE_FULLSCREEN_LABEL": "Pozostań widoczny w trybie pełnoekranowym",
     "FONT_SIZE_LABEL": "Rozmiar czcionki:",

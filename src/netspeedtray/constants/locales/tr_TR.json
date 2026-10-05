@@ -83,6 +83,8 @@
     "UPDATE_INTERVAL_LABEL": "Güncelleme Aralığı:",
     "START_WITH_WINDOWS_LABEL": "Windows ile birlikte başlat",
     "FREE_MOVE_LABEL": "Serbest Taşıma (Hizalama Yok)",
+    "LOCK_POSITION_LABEL": "Serbest Ta??ma Konumunu Kilitle",
+    "LOCK_POSITION_DESCRIPTION": "Serbest Ta??ma etkin oldu?unda pencere ??esinin s?r?klenmesini engeller.",
     "FREE_FLOAT_LABEL": "Görev çubuğu olmayan bir ekranda serbestçe hareket ettir",
     "KEEP_VISIBLE_FULLSCREEN_LABEL": "Tam Ekranda Görünür Tut",
     "FONT_SIZE_LABEL": "Yazı Boyutu:",

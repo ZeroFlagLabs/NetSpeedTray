@@ -83,6 +83,8 @@
     "UPDATE_INTERVAL_LABEL": "Intervallo di aggiornamento:",
     "START_WITH_WINDOWS_LABEL": "Avvia con Windows",
     "FREE_MOVE_LABEL": "Movimento libero (senza aggancio)",
+    "LOCK_POSITION_LABEL": "Blocca posizione movimento libero",
+    "LOCK_POSITION_DESCRIPTION": "Impedisce di trascinare il widget quando Movimento libero ? attivo.",
     "FREE_FLOAT_LABEL": "Fluttua su uno schermo senza barra delle applicazioni",
     "KEEP_VISIBLE_FULLSCREEN_LABEL": "Mantieni visibile a schermo intero",
     "FONT_SIZE_LABEL": "Dimensione carattere:",

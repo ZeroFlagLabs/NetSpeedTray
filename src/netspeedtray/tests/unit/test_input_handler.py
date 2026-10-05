@@ -114,6 +114,64 @@ class TestInputHandler(unittest.TestCase):
         self.assertFalse(self.handler._is_dragging)
         event.accept.assert_called_once()
 
+    def test_locked_floating_widget_does_not_prepare_drag(self):
+        """Lock position prevents a floating widget from starting a drag."""
+        self.mock_widget.config = {
+            "free_move": True,
+            "lock_position": True,
+        }
+        event = self._create_mouse_event(
+            button=Qt.MouseButton.LeftButton,
+            global_x=150,
+            global_y=150,
+        )
+
+        self.handler.handle_mouse_press(event)
+
+        self.assertIsNone(self.handler._drag_start_pos)
+        self.assertFalse(self.handler._is_dragging)
+        self.assertFalse(self.mock_widget._dragging)
+        event.accept.assert_called_once()
+
+    def test_position_lock_does_not_affect_docked_widget(self):
+        """Lock position is deliberately scoped to floating mode."""
+        self.mock_widget.config = {
+            "free_move": False,
+            "lock_position": True,
+        }
+        event = self._create_mouse_event(
+            button=Qt.MouseButton.LeftButton,
+            global_x=150,
+            global_y=150,
+        )
+
+        self.handler.handle_mouse_press(event)
+
+        self.assertEqual(self.handler._drag_start_pos, QPoint(50, 50))
+        self.assertFalse(self.handler._is_dragging)
+
+    def test_position_lock_blocks_existing_drag_attempt(self):
+        """A locked floating widget never reaches the position manager."""
+        self.mock_widget.config = {
+            "free_move": True,
+            "lock_position": True,
+        }
+        self.handler._drag_start_pos = QPoint(50, 50)
+
+        event = self._create_mouse_event(
+            button=Qt.MouseButton.LeftButton,
+            global_x=200,
+            global_y=200,
+        )
+
+        self.handler.handle_mouse_move(event)
+
+        self.mock_position_manager.constrain_drag.assert_not_called()
+        self.mock_widget.move.assert_not_called()
+        self.assertIsNone(self.handler._drag_start_pos)
+        self.assertFalse(self.handler._is_dragging)
+        self.assertFalse(self.mock_widget._dragging)
+
     def test_mouse_press_right_ignores_event(self):
         """Test Right Click is ignored by InputHandler (handled by contextMenuEvent)."""
         event = self._create_mouse_event(button=Qt.MouseButton.RightButton)

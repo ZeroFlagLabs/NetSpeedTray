@@ -39,9 +39,23 @@ class InputHandler(QObject):
         self._drag_start_pos: Optional[QPoint] = None
         self._is_dragging: bool = False
 
+    def _is_position_locked(self) -> bool:
+        """True only when Lock Position and Free Move are both enabled."""
+        return (
+            bool(self.widget.config.get("free_move", False))
+            and bool(self.widget.config.get("lock_position", False))
+        )
+
     def handle_mouse_press(self, event: QMouseEvent) -> None:
         """Handles mouse press start (left = drag; middle = configurable click action)."""
         if event.button() == Qt.MouseButton.LeftButton:
+            if self._is_position_locked():
+                self._drag_start_pos = None
+                self._is_dragging = False
+                self.widget._dragging = False
+                event.accept()
+                return
+
             self._drag_start_pos = event.globalPosition().toPoint() - self.widget.pos()
             self._is_dragging = False # Waiting for move to confirm drag
             event.accept()
@@ -56,6 +70,12 @@ class InputHandler(QObject):
 
     def handle_mouse_move(self, event: QMouseEvent) -> None:
         """Handles dragging logic."""
+        if self._is_position_locked():
+            self._drag_start_pos = None
+            self._is_dragging = False
+            self.widget._dragging = False
+            return
+
         if not (event.buttons() & Qt.MouseButton.LeftButton) or not self._drag_start_pos:
             return
 

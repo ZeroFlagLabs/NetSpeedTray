@@ -107,8 +107,21 @@ class WidgetPage(QWidget):
         # --- Behavior (was on the General page) ---
         layout.addWidget(section_header(self.i18n.BEHAVIOR_GROUP_TITLE))
         self.free_move = Win11Toggle(label_text="")
-        self.free_move.toggled.connect(self.on_change)
+        self.free_move.toggled.connect(self._on_free_move_toggled)
         layout.addWidget(SettingCard(self.i18n.FREE_MOVE_LABEL, control=self.free_move))
+
+        self.lock_position = Win11Toggle(label_text="")
+        self.lock_position.setEnabled(False)
+        self.lock_position.toggled.connect(self.on_change)
+        layout.addWidget(SettingCard(
+            getattr(self.i18n, "LOCK_POSITION_LABEL", "Lock Free Move Position"),
+            description=getattr(
+                self.i18n,
+                "LOCK_POSITION_DESCRIPTION",
+                "Prevent the widget being dragged while Free Move is enabled.",
+            ),
+            control=self.lock_position,
+        ))
 
         # #188: float the widget on a preferred monitor that has no taskbar of its own.
         self.free_float = Win11Toggle(label_text="")
@@ -144,6 +157,17 @@ class WidgetPage(QWidget):
         self.on_change()
 
     # --- behavior ---------------------------------------------------------------
+    def _on_free_move_toggled(self, enabled: bool) -> None:
+        """Only offer position locking while Free Move itself is enabled."""
+        self.lock_position.setEnabled(enabled)
+
+        if not enabled:
+            self.lock_position.blockSignals(True)
+            self.lock_position.setChecked(False)
+            self.lock_position.blockSignals(False)
+
+        self.on_change()
+
     def ensure_hardware_visible(self) -> None:
         """Called by the dialog when a hardware monitor is enabled on the Hardware page: switch the
         widget out of network-only so the freshly-enabled stat is actually visible. This is the
@@ -224,7 +248,14 @@ class WidgetPage(QWidget):
             config.get("widget_section_dividers", False)
         )
 
-        self.free_move.setChecked(config.get("free_move", False))
+        free_move = bool(config.get("free_move", False))
+        self.free_move.setChecked(free_move)
+
+        self.lock_position.setChecked(
+            free_move and bool(config.get("lock_position", False))
+        )
+        self.lock_position.setEnabled(free_move)
+
         self.free_float.setChecked(config.get("free_float", True))
         self.keep_visible_fullscreen.setChecked(
             config.get("keep_visible_fullscreen", constants.config.defaults.DEFAULT_KEEP_VISIBLE_FULLSCREEN))
@@ -243,6 +274,7 @@ class WidgetPage(QWidget):
             ),
             "widget_section_dividers": self.section_dividers.isChecked(),
             "free_move": self.free_move.isChecked(),
+            "lock_position": self.lock_position.isChecked(),
             "free_float": self.free_float.isChecked(),
             "keep_visible_fullscreen": self.keep_visible_fullscreen.isChecked(),
         }

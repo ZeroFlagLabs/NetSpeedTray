@@ -83,6 +83,8 @@
     "UPDATE_INTERVAL_LABEL": "Aktualisierungsintervall:",
     "START_WITH_WINDOWS_LABEL": "Mit Windows starten",
     "FREE_MOVE_LABEL": "Frei beweglich (kein Einrasten)",
+    "LOCK_POSITION_LABEL": "Position bei freier Bewegung sperren",
+    "LOCK_POSITION_DESCRIPTION": "Verhindert, dass das Widget gezogen wird, w?hrend ?Freie Bewegung? aktiviert ist.",
     "FREE_FLOAT_LABEL": "Auf einem Monitor ohne Taskleiste frei schweben",
     "KEEP_VISIBLE_FULLSCREEN_LABEL": "Im Vollbild sichtbar halten",
     "FONT_SIZE_LABEL": "Schriftgröße:",

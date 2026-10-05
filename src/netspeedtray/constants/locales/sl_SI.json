@@ -83,6 +83,8 @@
     "UPDATE_INTERVAL_LABEL": "Interval posodabljanja:",
     "START_WITH_WINDOWS_LABEL": "Zaženi z zagonom sistema Windows",
     "FREE_MOVE_LABEL": "Prosto premikanje (brez pripenjanja)",
+    "LOCK_POSITION_LABEL": "Zakleni polo?aj prostega premikanja",
+    "LOCK_POSITION_DESCRIPTION": "Prepre?i vle?enje pripomo?ka, ko je omogo?eno prosto premikanje.",
     "FREE_FLOAT_LABEL": "Prosto lebdenje na zaslonu brez opravilne vrstice",
     "KEEP_VISIBLE_FULLSCREEN_LABEL": "Ohrani vidno v celozaslonskem načinu",
     "FONT_SIZE_LABEL": "Velikost pisave:",

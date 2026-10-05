@@ -83,6 +83,8 @@
     "UPDATE_INTERVAL_LABEL": "Intervalle de Mise à Jour :",
     "START_WITH_WINDOWS_LABEL": "Lancer avec Windows",
     "FREE_MOVE_LABEL": "Déplacement Libre (Pas de Collage)",
+    "LOCK_POSITION_LABEL": "Verrouiller la position en d?placement libre",
+    "LOCK_POSITION_DESCRIPTION": "Emp?che de d?placer le widget lorsque le d?placement libre est activ?.",
     "FREE_FLOAT_LABEL": "Affichage flottant sans barre des tâches",
     "KEEP_VISIBLE_FULLSCREEN_LABEL": "Rester visible en plein écran",
     "FONT_SIZE_LABEL": "Taille de Police :",
