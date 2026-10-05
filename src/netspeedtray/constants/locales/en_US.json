@@ -79,6 +79,8 @@
     "UPDATE_INTERVAL_LABEL": "Update Interval:",
     "START_WITH_WINDOWS_LABEL": "Start with Windows",
     "FREE_MOVE_LABEL": "Free Move (No Snapping)",
+    "LOCK_POSITION_LABEL": "Lock Free Move Position",
+    "LOCK_POSITION_DESCRIPTION": "Prevent the widget being dragged while Free Move is enabled.",
     "FREE_FLOAT_LABEL": "Float on a display without a taskbar",
     "KEEP_VISIBLE_FULLSCREEN_LABEL": "Keep Visible in Fullscreen",
     "FONT_SIZE_LABEL": "Font Size:",

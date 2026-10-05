@@ -79,6 +79,8 @@
     "UPDATE_INTERVAL_LABEL": "Update-interval:",
     "START_WITH_WINDOWS_LABEL": "Starten met Windows",
     "FREE_MOVE_LABEL": "Vrij bewegen (geen uitlijning)",
+    "LOCK_POSITION_LABEL": "Vrije verplaatsingspositie vergrendelen",
+    "LOCK_POSITION_DESCRIPTION": "Voorkomt dat de widget wordt versleept wanneer Vrij bewegen is ingeschakeld.",
     "FREE_FLOAT_LABEL": "Zweven op een beeldscherm zonder taakbalk",
     "KEEP_VISIBLE_FULLSCREEN_LABEL": "Zichtbaar houden in volledig scherm",
     "FONT_SIZE_LABEL": "Lettergrootte:",
