@@ -103,6 +103,7 @@ class RenderConfig:
     monitor_ram_enabled: bool = False
     monitor_vram_enabled: bool = False
     show_memory_labels: bool = False
+    space_before_hardware_units: bool = False
     stack_hardware_stats: bool = False
     hardware_label_style: str = "icons_colored"
     widget_display_mode: str = "network_only"
@@ -180,6 +181,9 @@ class RenderConfig:
                 monitor_ram_enabled=bool(config.get('monitor_ram_enabled', False)),
                 monitor_vram_enabled=bool(config.get('monitor_vram_enabled', False)),
                 show_memory_labels=bool(config.get('show_memory_labels', False)),
+                space_before_hardware_units=bool(
+                    config.get('space_before_hardware_units', False)
+                ),
                 stack_hardware_stats=bool(config.get('stack_hardware_stats', False)),
                 widget_display_mode=str(config.get('widget_display_mode', 'network_only')),
                 widget_display_order=list(config.get('widget_display_order', ["network", "cpu", "gpu"])),
@@ -711,6 +715,11 @@ class WidgetRenderer:
 
             style = getattr(config, 'hardware_label_style', 'icons_colored')
             sp = self.metrics.horizontalAdvance(" ")
+            hardware_unit_gap = (
+                constants.renderer.VALUE_UNIT_GAP
+                if getattr(config, "space_before_hardware_units", False)
+                else 0
+            )
 
             # Keep percent / suffix / memory as SEPARATE cells (not one concatenated string) so each sits
             # in its own fixed-width column. That lines the rows up (the memory values align across CPU
@@ -747,7 +756,16 @@ class WidgetRenderer:
             render_memory = section != "stats"
 
             label_col = (max(self.metrics.horizontalAdvance(r['label']) for r in rows) + 4) if style == "text" else 14
-            pct_col = self.metrics.horizontalAdvance("100%")   # the >3d percent is already a fixed 4-char field
+
+            if hardware_unit_gap:
+                pct_col = (
+                    self.metrics.horizontalAdvance("100")
+                    + hardware_unit_gap
+                    + self.metrics.horizontalAdvance("%")
+                )
+            else:
+                pct_col = self.metrics.horizontalAdvance("100%")
+
             if show_temps and show_power:
                 suffix_ref = "(99°C, 250.0W)"
             elif show_power:
@@ -761,7 +779,23 @@ class WidgetRenderer:
             any_mem = render_memory and any(r['mem'] for r in rows)
             totals = [r['total'] for r in rows if r['total'] > 0]
             t = max(totals) if totals else 0.0
-            mem_num_col = self.metrics.horizontalAdvance(f"{t:.1f}/{t:.1f}G" if t > 0 else "9999G") if any_mem else 0
+
+            if any_mem:
+                mem_ref_value = f"{t:.1f}/{t:.1f}" if t > 0 else "9999"
+
+                if hardware_unit_gap:
+                    mem_num_col = (
+                        self.metrics.horizontalAdvance(mem_ref_value)
+                        + hardware_unit_gap
+                        + self.metrics.horizontalAdvance("G")
+                    )
+                else:
+                    mem_num_col = self.metrics.horizontalAdvance(
+                        mem_ref_value + "G"
+                    )
+            else:
+                mem_num_col = 0
+
             # A gap, not a glyph. The memory value used to be introduced by " | ", which read as
             # clutter on a readout that is only a few characters wide (#250). Whitespace separates
             # it just as well, and drops a few pixels of reserved width while it is at it.
@@ -796,6 +830,36 @@ class WidgetRenderer:
             show_mem_labels = bool(getattr(config, 'show_memory_labels', False))
             mem_label_col = memory_label_width(self.metrics) if (show_mem_labels and any_mem) else 0
 
+            def draw_memory_value(
+                right_x: int,
+                value_y: int,
+                mem_text: str,
+            ) -> None:
+                """Right-align memory while optionally separating its G unit."""
+                if hardware_unit_gap and mem_text.endswith("G"):
+                    value_text = mem_text[:-1]
+                    value_width = self.metrics.horizontalAdvance(value_text)
+                    unit_width = self.metrics.horizontalAdvance("G")
+                    content_width = (
+                        value_width
+                        + hardware_unit_gap
+                        + unit_width
+                    )
+                    number_x = right_x - content_width
+
+                    painter.drawText(number_x, value_y, value_text)
+                    painter.drawText(
+                        number_x + value_width + hardware_unit_gap,
+                        value_y,
+                        "G",
+                    )
+                else:
+                    number_x = (
+                        right_x
+                        - self.metrics.horizontalAdvance(mem_text)
+                    )
+                    painter.drawText(number_x, value_y, mem_text)
+
             # When memory is its own stacked visual section, draw only the
             # RAM/VRAM rows. The external section-spacing code supplies the
             # gap, so there is deliberately no inline sep_col here.
@@ -824,13 +888,12 @@ class WidgetRenderer:
                     else:
                         number_col_x = current_x
 
-                    num_x = (
-                        number_col_x
-                        + mem_num_col
-                        - self.metrics.horizontalAdvance(r['mem'])
-                    )
                     painter.setPen(self.default_color)
-                    painter.drawText(num_x, y, r['mem'])
+                    draw_memory_value(
+                        number_col_x + mem_num_col,
+                        y,
+                        r['mem'],
+                    )
                     y += line_height
 
                 self._last_text_rect = QRect(
@@ -920,26 +983,52 @@ class WidgetRenderer:
                     or not has_mem_below
                     or bool(mem_label_col)
                 )
-                px = (vx + pct_col - self.metrics.horizontalAdvance(r['pct'])) if right_align_pct else vx
-                painter.drawText(px, y, r['pct'])
+                if hardware_unit_gap and r['pct'].endswith("%"):
+                    pct_value = r['pct'][:-1]
+                    pct_value_width = self.metrics.horizontalAdvance(
+                        pct_value
+                    )
+                    pct_content_width = (
+                        pct_value_width
+                        + hardware_unit_gap
+                        + self.metrics.horizontalAdvance("%")
+                    )
+
+                    px = (
+                        vx + pct_col - pct_content_width
+                        if right_align_pct
+                        else vx
+                    )
+
+                    painter.drawText(px, y, pct_value)
+                    painter.drawText(
+                        px + pct_value_width + hardware_unit_gap,
+                        y,
+                        "%",
+                    )
+                else:
+                    pct_width = self.metrics.horizontalAdvance(r['pct'])
+                    px = (
+                        vx + pct_col - pct_width
+                        if right_align_pct
+                        else vx
+                    )
+                    painter.drawText(px, y, r['pct'])
+
                 if suffix_col and r['suffix']:
                     painter.drawText(vx + pct_col + sp, y, r['suffix'])  # live suffix in its worst-case column
                 if inline_mem and mem_col and r['mem']:
                     mx = vx + pct_col + suffix_col
                     label_x = mx + sep_col
                     number_col_x = label_x + mem_label_col
-                    # Right-align the number in its fixed-width column so the
-                    # trailing 'G' lines up while RAM/VRAM stay anchored.
-                    num_x = (
-                        number_col_x
-                        + mem_num_col
-                        - self.metrics.horizontalAdvance(r['mem'])
-                    )
-
                     if mem_label_col:
                         self._draw_memory_label(painter, label_x, y, r)
 
-                    painter.drawText(num_x, y, r['mem'])
+                    draw_memory_value(
+                        number_col_x + mem_num_col,
+                        y,
+                        r['mem'],
+                    )
                 y += line_height
 
                 if not inline_mem and r['mem']:
@@ -952,17 +1041,12 @@ class WidgetRenderer:
                             current_x
                             + self.metrics.horizontalAdvance(r['mem_label'] + " ")
                         )
-                        num_x = (
-                            number_col_x
-                            + mem_num_col
-                            - self.metrics.horizontalAdvance(r['mem'])
-                        )
+                        mem_right = number_col_x + mem_num_col
                     else:
                         # Preserve the existing unlabeled-memory alignment.
                         mem_right = current_x + seg_w
-                        num_x = mem_right - self.metrics.horizontalAdvance(r['mem'])
 
-                    painter.drawText(num_x, y, r['mem'])
+                    draw_memory_value(mem_right, y, r['mem'])
                     y += line_height
 
             self._last_text_rect = QRect(x_offset, top_y, seg_w + margin, total_height)

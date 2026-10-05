@@ -82,6 +82,7 @@
     "LANGUAGE_LABEL": "Language",
     "UPDATE_INTERVAL_LABEL": "Update Interval:",
     "START_WITH_WINDOWS_LABEL": "Start with Windows",
+    "SPACE_BEFORE_HARDWARE_UNITS_LABEL": "Space Before Hardware Units",
     "FREE_MOVE_LABEL": "Free Move (No Snapping)",
     "LOCK_POSITION_LABEL": "Lock Free Move Position",
     "LOCK_POSITION_DESCRIPTION": "Prevent the widget being dragged while Free Move is enabled.",

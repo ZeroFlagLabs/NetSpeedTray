@@ -82,6 +82,7 @@
     "LANGUAGE_LABEL": "Jezik",
     "UPDATE_INTERVAL_LABEL": "Interval posodabljanja:",
     "START_WITH_WINDOWS_LABEL": "Zaženi z zagonom sistema Windows",
+    "SPACE_BEFORE_HARDWARE_UNITS_LABEL": "Razmik pred enotami strojne opreme",
     "FREE_MOVE_LABEL": "Prosto premikanje (brez pripenjanja)",
     "LOCK_POSITION_LABEL": "Zakleni polo?aj prostega premikanja",
     "LOCK_POSITION_DESCRIPTION": "Prepre?i vle?enje pripomo?ka, ko je omogo?eno prosto premikanje.",

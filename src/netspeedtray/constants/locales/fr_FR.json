@@ -82,6 +82,7 @@
     "LANGUAGE_LABEL": "Langue",
     "UPDATE_INTERVAL_LABEL": "Intervalle de Mise à Jour :",
     "START_WITH_WINDOWS_LABEL": "Lancer avec Windows",
+    "SPACE_BEFORE_HARDWARE_UNITS_LABEL": "Espace avant les unit?s mat?rielles",
     "FREE_MOVE_LABEL": "Déplacement Libre (Pas de Collage)",
     "LOCK_POSITION_LABEL": "Verrouiller la position en d?placement libre",
     "LOCK_POSITION_DESCRIPTION": "Emp?che de d?placer le widget lorsque le d?placement libre est activ?.",

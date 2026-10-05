@@ -82,6 +82,7 @@
     "LANGUAGE_LABEL": "Nyelv",
     "UPDATE_INTERVAL_LABEL": "Frissítési időköz:",
     "START_WITH_WINDOWS_LABEL": "Indítás a Windowszal",
+    "SPACE_BEFORE_HARDWARE_UNITS_LABEL": "T?rk?z a hardveregys?gek el?tt",
     "FREE_MOVE_LABEL": "Szabad mozgatás (illesztés nélkül)",
     "LOCK_POSITION_LABEL": "Szabad mozgat?si poz?ci? z?rol?sa",
     "LOCK_POSITION_DESCRIPTION": "Megakad?lyozza a widget h?z?s?t, amikor a Szabad mozgat?s enged?lyezve van.",

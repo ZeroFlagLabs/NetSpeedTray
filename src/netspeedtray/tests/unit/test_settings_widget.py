@@ -15,6 +15,7 @@ def test_layout_and_behaviour_round_trip(page):
     page.load_settings({
         "widget_display_mode": "cycle",
         "widget_display_order": ["gpu", "cpu", "network"],
+        "space_before_hardware_units": True,
         "free_move": True,
         "lock_position": True,
         "keep_visible_fullscreen": True,
@@ -22,6 +23,7 @@ def test_layout_and_behaviour_round_trip(page):
     out = page.get_settings()
     assert out["widget_display_mode"] == "cycle"
     assert out["widget_display_order"] == ["gpu", "cpu", "network"]
+    assert out["space_before_hardware_units"] is True
     assert out["free_move"] is True
     assert out["lock_position"] is True
     assert out["keep_visible_fullscreen"] is True

@@ -82,6 +82,7 @@
     "LANGUAGE_LABEL": "Lingua",
     "UPDATE_INTERVAL_LABEL": "Intervallo di aggiornamento:",
     "START_WITH_WINDOWS_LABEL": "Avvia con Windows",
+    "SPACE_BEFORE_HARDWARE_UNITS_LABEL": "Spazio prima delle unit? hardware",
     "FREE_MOVE_LABEL": "Movimento libero (senza aggancio)",
     "LOCK_POSITION_LABEL": "Blocca posizione movimento libero",
     "LOCK_POSITION_DESCRIPTION": "Impedisce di trascinare il widget quando Movimento libero ? attivo.",

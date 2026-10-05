@@ -82,6 +82,7 @@
     "LANGUAGE_LABEL": "Sprache",
     "UPDATE_INTERVAL_LABEL": "Aktualisierungsintervall:",
     "START_WITH_WINDOWS_LABEL": "Mit Windows starten",
+    "SPACE_BEFORE_HARDWARE_UNITS_LABEL": "Abstand vor Hardware-Einheiten",
     "FREE_MOVE_LABEL": "Frei beweglich (kein Einrasten)",
     "LOCK_POSITION_LABEL": "Position bei freier Bewegung sperren",
     "LOCK_POSITION_DESCRIPTION": "Verhindert, dass das Widget gezogen wird, w?hrend ?Freie Bewegung? aktiviert ist.",

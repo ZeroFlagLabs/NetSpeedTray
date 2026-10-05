@@ -104,6 +104,15 @@ class WidgetPage(QWidget):
             )
         )
 
+        self.space_before_hardware_units = Win11Toggle(label_text="")
+        self.space_before_hardware_units.toggled.connect(self.on_change)
+        layout.addWidget(
+            SettingCard(
+                self.i18n.SPACE_BEFORE_HARDWARE_UNITS_LABEL,
+                control=self.space_before_hardware_units,
+            )
+        )
+
         # --- Behavior (was on the General page) ---
         layout.addWidget(section_header(self.i18n.BEHAVIOR_GROUP_TITLE))
         self.free_move = Win11Toggle(label_text="")
@@ -248,6 +257,10 @@ class WidgetPage(QWidget):
             config.get("widget_section_dividers", False)
         )
 
+        self.space_before_hardware_units.setChecked(
+            config.get("space_before_hardware_units", False)
+        )
+
         free_move = bool(config.get("free_move", False))
         self.free_move.setChecked(free_move)
 
@@ -273,6 +286,7 @@ class WidgetPage(QWidget):
                 else None
             ),
             "widget_section_dividers": self.section_dividers.isChecked(),
+            "space_before_hardware_units": self.space_before_hardware_units.isChecked(),
             "free_move": self.free_move.isChecked(),
             "lock_position": self.lock_position.isChecked(),
             "free_float": self.free_float.isChecked(),
