@@ -41,6 +41,7 @@ class RendererConstants:
     # hard-coded CPU/GPU labels, these are universal abbreviations.
     MEMORY_LABEL_RAM: Final[str] = "RAM"
     MEMORY_LABEL_VRAM: Final[str] = "VRAM"
+    MEMORY_LABEL_VALUE_PADDING_PX: Final[int] = 3
 
     # ========== MATPLOTLIB GRAPH WINDOW CONSTANTS ==========
     

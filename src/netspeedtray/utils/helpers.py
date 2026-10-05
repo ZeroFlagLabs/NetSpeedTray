@@ -206,7 +206,10 @@ def memory_label_width(metrics) -> int:
     """Width of the RAM/VRAM label cell (#250): the widest label plus a space. The renderer paints
     into it and the layout reserves it, so both call this - the reserved and the painted width
     cannot drift apart."""
-    return metrics.horizontalAdvance(constants.renderer.MEMORY_LABEL_VRAM + " ")
+    return (
+        metrics.horizontalAdvance(constants.renderer.MEMORY_LABEL_VRAM + " ")
+        + constants.renderer.MEMORY_LABEL_VALUE_PADDING_PX
+    )
 
 
 def format_speed(

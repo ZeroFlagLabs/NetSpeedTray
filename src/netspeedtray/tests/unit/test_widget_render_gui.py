@@ -409,6 +409,20 @@ def test_labels_widen_the_segment_by_exactly_the_shared_label_cell(renderer):
     assert on - off == memory_label_width(renderer.metrics), (off, on)
 
 
+def test_memory_label_cell_includes_value_padding(renderer):
+    """Keep a small visual gap between RAM/VRAM labels and their values."""
+    from netspeedtray.utils.helpers import memory_label_width
+
+    expected = (
+        renderer.metrics.horizontalAdvance(
+            constants.renderer.MEMORY_LABEL_VRAM + " "
+        )
+        + constants.renderer.MEMORY_LABEL_VALUE_PADDING_PX
+    )
+
+    assert memory_label_width(renderer.metrics) == expected
+
+
 def test_memory_label_positions_stay_fixed_across_value_width_changes(renderer):
     """RAM/VRAM labels must not move when the live memory value gains a digit."""
     from unittest.mock import patch
