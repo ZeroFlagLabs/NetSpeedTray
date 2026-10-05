@@ -1,6 +1,6 @@
 ﻿# NetSpeedTray - ZeroFlagLabs Fork Notes
 
-Last updated: 4 October 2026
+Last updated: 5 October 2026
 
 ## Purpose
 
@@ -83,6 +83,43 @@ Also causes `build.bat` to stop immediately if PyInstaller fails instead of
 continuing into Inno Setup.
 
 Submitted upstream as PR #329.
+
+
+### Lock Free Move Position
+
+Branch:
+
+`floating-position-lock`
+
+Adds an optional lock for the existing Free Move mode.
+
+When Free Move is enabled, `Lock Free Move Position` can prevent accidental
+dragging of the widget. Turning Free Move off automatically clears and disables
+the lock.
+
+Default: Off.
+
+### Hardware unit spacing
+
+Branch:
+
+`hardware-unit-spacing`
+
+Adds an optional `Space Before Hardware Units` setting.
+
+When enabled, CPU/GPU percentages and RAM/VRAM gigabyte units use the same
+5 px value-to-unit gap already used by the Network readout.
+
+Examples:
+
+- `45 %`
+- `7.2/15.8 G`
+
+Default: Off.
+
+The personal build also includes a small RAM/VRAM label-cell padding adjustment
+so RAM and VRAM retain their fixed alignment while keeping a natural visual gap
+before the memory value.
 
 ## Personal Build Identity
 
