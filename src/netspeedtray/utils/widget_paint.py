@@ -401,7 +401,23 @@ def render_widget(painter: QPainter, rect: QRect, renderer: WidgetRenderer, conf
     # computes its segment rects from font metrics during the draw, not before - so we run one draw onto a
     # throwaway surface (the mini-graph's point cache, keyed by data, is simply warmed by it).
     align_dx = 0
-    if (mode == "side_by_side" or config.widget_display_mode == "cycle") and layout_mode != "vertical" and width > 0:
+
+    # Docked Side-by-Side deliberately hugs the tray-side edge, but Free Move
+    # should preserve the user's chosen left-hand anchor. Otherwise narrower
+    # live content (for example VRAM changing from 12.5G to 1.5G) moves the
+    # entire visible readout to the right inside the reserved widget width.
+    should_right_align = (
+        config.widget_display_mode == "cycle"
+        or (
+            mode == "side_by_side"
+            and (
+                not getattr(config, "free_move", False)
+                or getattr(config, "free_move_anchor", "right") == "right"
+            )
+        )
+    )
+
+    if should_right_align and layout_mode != "vertical" and width > 0:
         try:
             probe = QImage(max(1, width), max(1, height), QImage.Format.Format_ARGB32_Premultiplied)
             mp = QPainter(probe)

@@ -80,6 +80,7 @@ class ConfigConstants:
     DEFAULT_DECIMAL_PLACES: Final[int] = 1
     DEFAULT_TEXT_ALIGNMENT: Final[str] = "center"
     DEFAULT_FREE_MOVE: Final[bool] = False
+    DEFAULT_FREE_MOVE_ANCHOR: Final[str] = "right"
     DEFAULT_LOCK_POSITION: Final[bool] = False
     # When the preferred monitor has NO taskbar of its own (e.g. the Corsair Xeneon Edge, or a
     # secondary display with "show taskbar on all displays" off), float the widget on THAT display
@@ -183,6 +184,7 @@ class ConfigConstants:
         "decimal_places": DEFAULT_DECIMAL_PLACES,
         "text_alignment": DEFAULT_TEXT_ALIGNMENT,
         "free_move": DEFAULT_FREE_MOVE,
+        "free_move_anchor": DEFAULT_FREE_MOVE_ANCHOR,
         "lock_position": DEFAULT_LOCK_POSITION,
         "free_float": DEFAULT_FREE_FLOAT,
         "double_click_action": DEFAULT_DOUBLE_CLICK_ACTION,
@@ -333,6 +335,11 @@ class ConfigConstants:
         "arrow_up_symbol": {"type": str, "default": ""},
         "arrow_down_symbol": {"type": str, "default": ""},
         "free_move": {"type": bool, "default": DEFAULT_FREE_MOVE},
+        "free_move_anchor": {
+            "type": str,
+            "default": DEFAULT_FREE_MOVE_ANCHOR,
+            "choices": ["left", "right"],
+        },
         "lock_position": {"type": bool, "default": DEFAULT_LOCK_POSITION},
         "free_float": {"type": bool, "default": DEFAULT_FREE_FLOAT},
         "double_click_action": {"type": str, "default": DEFAULT_DOUBLE_CLICK_ACTION, "choices": CLICK_ACTION_CHOICES},

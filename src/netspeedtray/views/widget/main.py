@@ -1007,7 +1007,23 @@ class NetworkSpeedWidget(QWidget):
             self._hover_card = UsageFlyout(self.i18n, today, month, hint=hint, cap=cap)
             screen = self.screen() or QApplication.primaryScreen()
             avail = screen.availableGeometry() if screen else self.frameGeometry()
-            self._hover_card.show_for(self.frameGeometry(), avail)
+
+            # Centre the hover card over the content that is actually visible
+            # right now, not the widget's larger reserved anti-jiggle area.
+            # Keep a 1 px visual allowance beyond each horizontal edge.
+            anchor_geo = self.frameGeometry()
+            try:
+                bounds = self.renderer.get_content_bounds()
+                if bounds is not None and bounds.isValid() and not bounds.isEmpty():
+                    content_top_left = self.mapToGlobal(bounds.topLeft())
+                    anchor_geo = QRect(
+                        content_top_left,
+                        bounds.size(),
+                    ).adjusted(-1, 0, 1, 0)
+            except Exception:
+                pass
+
+            self._hover_card.show_for(anchor_geo, avail)
         except Exception as e:
             self.logger.error("Error showing usage hover card: %s", e, exc_info=True)
 

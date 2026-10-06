@@ -35,12 +35,11 @@ if TYPE_CHECKING:
 # Logger Setup
 logger = logging.getLogger("NetSpeedTray.Core.PositionManager")
 
-# Free Move normally keeps the whole widget inside the screen. A small left-side
-# overhang is deliberately allowed so transparent/reserved widget space can sit
-# beyond the monitor edge and the visible content can be positioned flush with it.
-# Visually tuned on the ZeroFlagLabs build: -11 px was the preferred extreme, so
-# 12 px provides a one-pixel allowance without permitting meaningful widget loss.
-_FREE_MOVE_LEFT_OVERHANG_PX = 12
+# In Free Move, constrain the VISIBLE content rather than the invisible widget
+# rectangle. This lets reserved/transparent space sit beyond the screen while
+# keeping the first visible pixel just inside the physical display edge.
+_FREE_MOVE_VISIBLE_LEFT_MARGIN_PX = 1
+
 
 
 # --- Owner-window (taskbar Z-order dock) ------------------------------------
@@ -758,11 +757,46 @@ class PositionManager(QObject):
             logger.error("Error checking tray changes: %s", e)
 
     def _free_move_left_overhang_px(self) -> int:
-        """Maximum permitted off-screen distance at the left edge in Free Move."""
+        """Allow only enough left overhang to keep visible content 1 px on-screen."""
         if not bool(self._state.config.get("free_move", False)):
             return 0
 
-        return _FREE_MOVE_LEFT_OVERHANG_PX
+        anchor = self._state.config.get("free_move_anchor", "right")
+
+        # Right-anchored content grows towards the LEFT as its values widen.
+        # Keep the widget's reserved left edge essentially on-screen so the
+        # currently-unused width remains available as growth headroom.
+        if anchor == "right":
+            return max(
+                0,
+                constants.renderer.TEXT_MARGIN
+                - _FREE_MOVE_VISIBLE_LEFT_MARGIN_PX,
+            )
+
+        # Left anchor follows the live visible content, allowing its first
+        # visible pixel to sit 1 px inside the physical screen edge.
+        try:
+            renderer = getattr(self._state.widget, "renderer", None)
+            bounds = renderer.get_content_bounds() if renderer is not None else None
+
+            if bounds is not None and bounds.isValid() and not bounds.isEmpty():
+                content_left = max(0, int(bounds.left()))
+                return max(
+                    0,
+                    content_left - _FREE_MOVE_VISIBLE_LEFT_MARGIN_PX,
+                )
+        except Exception as e:
+            logger.debug(
+                "Could not determine visible-content left overhang: %s",
+                e,
+            )
+
+        # Safe pre-paint fallback for Left anchor.
+        return max(
+            0,
+            constants.renderer.TEXT_MARGIN
+            - _FREE_MOVE_VISIBLE_LEFT_MARGIN_PX,
+        )
 
     def constrain_drag(self, pos: QPoint) -> QPoint:
         """

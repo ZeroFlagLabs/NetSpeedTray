@@ -108,6 +108,8 @@ class RenderConfig:
     hardware_label_style: str = "icons_colored"
     widget_display_mode: str = "network_only"
     widget_display_order: List[str] = field(default_factory=lambda: ["network", "cpu", "gpu"])
+    free_move: bool = False
+    free_move_anchor: str = "right"
     widget_section_spacing: Optional[int] = None
     widget_section_dividers: bool = False
     show_hardware_temps: bool = False
@@ -187,6 +189,8 @@ class RenderConfig:
                 stack_hardware_stats=bool(config.get('stack_hardware_stats', False)),
                 widget_display_mode=str(config.get('widget_display_mode', 'network_only')),
                 widget_display_order=list(config.get('widget_display_order', ["network", "cpu", "gpu"])),
+                free_move=bool(config.get('free_move', False)),
+                free_move_anchor=str(config.get('free_move_anchor', 'right')),
                 widget_section_spacing=(
                     max(
                         constants.layout.WIDGET_SECTION_SPACING_MIN_PX,

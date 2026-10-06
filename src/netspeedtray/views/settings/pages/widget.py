@@ -119,6 +119,23 @@ class WidgetPage(QWidget):
         self.free_move.toggled.connect(self._on_free_move_toggled)
         layout.addWidget(SettingCard(self.i18n.FREE_MOVE_LABEL, control=self.free_move))
 
+        self.free_move_anchor = Win11ComboBox()
+        self.free_move_anchor.addItem("Left", userData="left")
+        self.free_move_anchor.addItem("Right", userData="right")
+        self.free_move_anchor.setMinimumWidth(110)
+        self.free_move_anchor.setEnabled(False)
+        self.free_move_anchor.currentIndexChanged.connect(self.on_change)
+        layout.addWidget(
+            SettingCard(
+                "Free Move Content Anchor",
+                description=(
+                    "Choose which side of the visible widget content stays fixed "
+                    "when displayed values change width."
+                ),
+                control=self.free_move_anchor,
+            )
+        )
+
         self.lock_position = Win11Toggle(label_text="")
         self.lock_position.setEnabled(False)
         self.lock_position.toggled.connect(self.on_change)
@@ -169,6 +186,7 @@ class WidgetPage(QWidget):
     def _on_free_move_toggled(self, enabled: bool) -> None:
         """Only offer position locking while Free Move itself is enabled."""
         self.lock_position.setEnabled(enabled)
+        self.free_move_anchor.setEnabled(enabled)
 
         if not enabled:
             self.lock_position.blockSignals(True)
@@ -264,6 +282,12 @@ class WidgetPage(QWidget):
         free_move = bool(config.get("free_move", False))
         self.free_move.setChecked(free_move)
 
+        anchor = config.get("free_move_anchor", "right")
+        index = self.free_move_anchor.findData(anchor)
+        if index >= 0:
+            self.free_move_anchor.setCurrentIndex(index)
+        self.free_move_anchor.setEnabled(free_move)
+
         self.lock_position.setChecked(
             free_move and bool(config.get("lock_position", False))
         )
@@ -288,6 +312,7 @@ class WidgetPage(QWidget):
             "widget_section_dividers": self.section_dividers.isChecked(),
             "space_before_hardware_units": self.space_before_hardware_units.isChecked(),
             "free_move": self.free_move.isChecked(),
+            "free_move_anchor": self.free_move_anchor.currentData(),
             "lock_position": self.lock_position.isChecked(),
             "free_float": self.free_float.isChecked(),
             "keep_visible_fullscreen": self.keep_visible_fullscreen.isChecked(),
