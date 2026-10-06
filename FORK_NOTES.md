@@ -99,15 +99,34 @@ the lock.
 
 Default: Off.
 
-### Free Move left-edge positioning
+### Side-by-side memory spacing and alignment
 
-The personal build allows a small controlled left-edge overhang while using
-Free Move.
+In Side-by-Side mode, RAM and VRAM use a fixed 6 px gap between the memory
+label and its value.
 
-The widget may extend up to 12 px beyond the physical left edge of the screen,
-allowing the visible readout to sit flush with the screen edge.
+CPU and GPU values above them align with the right edge of their corresponding
+RAM and VRAM value. This keeps each CPU/RAM and GPU/VRAM pair visually aligned
+while allowing the memory value to grow naturally from its label.
 
-The right, top and bottom edges remain fully constrained on-screen.
+### Free Move content anchoring
+
+Free Move now provides a selectable `Free Move Content Anchor`:
+
+- `Left` keeps the visible content anchored at the left and lets changing
+  values grow or shrink to the right.
+- `Right` keeps the content anchored at the right and preserves unused space
+  on the left as expansion headroom.
+
+Left-edge movement is constrained using the visible/reserved content geometry
+rather than a fixed widget-window overhang. This keeps content on-screen while
+still allowing transparent or unused widget space to extend beyond the edge.
+
+### Hover-card positioning
+
+The data-usage hover card is centred over the content that is actually visible
+at the time instead of the full reserved widget width.
+
+This prevents anti-jiggle expansion space from visually shifting the hover card.
 
 ### Hardware unit spacing
 
