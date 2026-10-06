@@ -830,6 +830,18 @@ class WidgetRenderer:
             show_mem_labels = bool(getattr(config, 'show_memory_labels', False))
             mem_label_col = memory_label_width(self.metrics) if (show_mem_labels and any_mem) else 0
 
+            def memory_value_width(mem_text: str) -> int:
+                """Return the actual visible width of a rendered memory value."""
+                if hardware_unit_gap and mem_text.endswith("G"):
+                    value_text = mem_text[:-1]
+                    return (
+                        self.metrics.horizontalAdvance(value_text)
+                        + hardware_unit_gap
+                        + self.metrics.horizontalAdvance("G")
+                    )
+
+                return self.metrics.horizontalAdvance(mem_text)
+
             def draw_memory_value(
                 right_x: int,
                 value_y: int,
@@ -916,16 +928,20 @@ class WidgetRenderer:
             stat_col = label_col + pct_col + suffix_col + mem_col
 
             if any_mem and not inline_mem:
-                # A labelled memory row starts at the same left edge as the
-                # CPU/GPU row. Use the actual visible label width here so RAM
-                # and VRAM each get one normal space before their value.
                 if mem_label_col:
-                    memory_label_row_width = max(
-                        self.metrics.horizontalAdvance(r['mem_label'] + " ")
+                    # Side-by-side labelled memory uses a true fixed visual
+                    # gap between each individual label and its live value.
+                    #
+                    # RAM/VRAM therefore no longer share a right-aligned
+                    # number column. Each row grows naturally to the right
+                    # from: label + fixed gap.
+                    memory_row_width = max(
+                        self.metrics.horizontalAdvance(r['mem_label'])
+                        + constants.renderer.SIDE_BY_SIDE_MEMORY_LABEL_VALUE_GAP_PX
+                        + memory_value_width(r['mem'])
                         for r in rows
                         if r['mem']
                     )
-                    memory_row_width = memory_label_row_width + mem_num_col
                 else:
                     memory_row_width = label_col + mem_num_col
             else:
@@ -960,10 +976,17 @@ class WidgetRenderer:
                     self._draw_icon(painter, r['label'], current_x, y, QColor(r['color']))
                 vx = current_x + label_col
 
-                # In Side-by-Side with a labelled memory row below, align the
-                # CPU/GPU value area to the same right edge as RAM/VRAM.
+                # In Side-by-Side with a labelled memory row below, align
+                # this CPU/GPU row to the right edge of its OWN RAM/VRAM
+                # value rather than the widest memory row.
                 if not inline_mem and r['mem'] and mem_label_col:
-                    vx = current_x + seg_w - (pct_col + suffix_col)
+                    pair_right = (
+                        current_x
+                        + self.metrics.horizontalAdvance(r['mem_label'])
+                        + constants.renderer.SIDE_BY_SIDE_MEMORY_LABEL_VALUE_GAP_PX
+                        + memory_value_width(r['mem'])
+                    )
+                    vx = pair_right - (pct_col + suffix_col)
 
                 painter.setPen(self.default_color)
                 # Right-align the percent in its fixed "100%" column whenever something trails it on the
@@ -1033,15 +1056,19 @@ class WidgetRenderer:
 
                 if not inline_mem and r['mem']:
                     if mem_label_col:
-                        # In Side-by-Side, start the memory row at the same
-                        # left edge as the CPU/GPU row above it. Each label is
-                        # followed by one normal space before its value.
+                        # Keep the label stationary and place the live value
+                        # immediately after it with one fixed pixel gap.
                         self._draw_memory_label(painter, current_x, y, r)
-                        number_col_x = (
+
+                        value_left = (
                             current_x
-                            + self.metrics.horizontalAdvance(r['mem_label'] + " ")
+                            + self.metrics.horizontalAdvance(r['mem_label'])
+                            + constants.renderer.SIDE_BY_SIDE_MEMORY_LABEL_VALUE_GAP_PX
                         )
-                        mem_right = number_col_x + mem_num_col
+                        mem_right = (
+                            value_left
+                            + memory_value_width(r['mem'])
+                        )
                     else:
                         # Preserve the existing unlabeled-memory alignment.
                         mem_right = current_x + seg_w

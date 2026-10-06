@@ -42,6 +42,7 @@ class RendererConstants:
     MEMORY_LABEL_RAM: Final[str] = "RAM"
     MEMORY_LABEL_VRAM: Final[str] = "VRAM"
     MEMORY_LABEL_VALUE_PADDING_PX: Final[int] = 3
+    SIDE_BY_SIDE_MEMORY_LABEL_VALUE_GAP_PX: Final[int] = 6
 
     # ========== MATPLOTLIB GRAPH WINDOW CONSTANTS ==========
     
