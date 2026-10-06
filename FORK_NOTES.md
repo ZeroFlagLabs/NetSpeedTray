@@ -15,18 +15,18 @@ The personal build is maintained on:
 
 ## Current Personal Release
 
-Version: `2.1.7.2`
+Version: `2.1.7.3`
 
-Tag: `v2.1.7.2`
+Tag: `v2.1.7.3`
 
 Release source commit:
 
-`fa89206410d509f4c5a1cc17b83bb9a71967d5b8`
+`f9400fca5072c0cc8fc00301ce869098bf6d7b88`
 
 The release contains:
 
-- `NetSpeedTray-2.1.7.2-x64-Setup.exe`
-- `NetSpeedTray-Portable-2.1.7.2.zip`
+- `NetSpeedTray-2.1.7.3-x64-Setup.exe`
+- `NetSpeedTray-Portable-2.1.7.3.zip`
 - `checksums.txt`
 
 The installer is locally built and unsigned.
