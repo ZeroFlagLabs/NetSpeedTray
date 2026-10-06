@@ -336,7 +336,7 @@ class TestPositionManager(unittest.TestCase):
 
     @patch('PyQt6.QtWidgets.QApplication.screenAt')
     def test_free_move_drag_allows_partial_left_overhang(self, mock_screen_at):
-        """Free Move may extend left while keeping a usable part of the widget visible."""
+        """Right anchor keeps its reserved left-side growth buffer on-screen."""
         screen = self.mock_taskbar.get_screen.return_value
         screen.geometry.return_value = QRect(0, 0, 1920, 1080)
         screen.name.return_value = "DISPLAY1"
@@ -347,12 +347,35 @@ class TestPositionManager(unittest.TestCase):
         )
 
         self.config["free_move"] = True
+        self.config["free_move_anchor"] = "right"
 
         constrained = self.manager.constrain_drag(QPoint(-500, 500))
 
-        # Free Move deliberately permits no more than 12 px beyond
-        # the physical left edge.
-        self.assertEqual(constrained, QPoint(-12, 500))
+        # TEXT_MARGIN is 2 px and the visible safety margin is 1 px,
+        # so only 1 px of the reserved widget may overhang on the left.
+        self.assertEqual(constrained, QPoint(-1, 500))
+
+    @patch('PyQt6.QtWidgets.QApplication.screenAt')
+    def test_free_move_left_anchor_follows_visible_content(self, mock_screen_at):
+        """Left anchor may overhang only enough to leave visible content 1 px on-screen."""
+        screen = self.mock_taskbar.get_screen.return_value
+        screen.geometry.return_value = QRect(0, 0, 1920, 1080)
+        screen.name.return_value = "DISPLAY1"
+
+        mock_screen_at.side_effect = (
+            lambda point: None if point.x() < 0 else screen
+        )
+
+        self.config["free_move"] = True
+        self.config["free_move_anchor"] = "left"
+        self.mock_widget.renderer.get_content_bounds.return_value = QRect(
+            14, 0, 80, 20
+        )
+
+        constrained = self.manager.constrain_drag(QPoint(-500, 500))
+
+        # Content begins at local x=14, leaving it at global x=1.
+        self.assertEqual(constrained, QPoint(-13, 500))
 
     @patch('PyQt6.QtWidgets.QApplication.screenAt')
     @patch('netspeedtray.core.position_manager.get_taskbar_info')
@@ -373,11 +396,14 @@ class TestPositionManager(unittest.TestCase):
         )
 
         self.config["free_move"] = True
+        self.config["free_move_anchor"] = "left"
         self.config["position_x"] = -12
         self.config["position_y"] = 500
 
         self.manager.update_position()
 
+        # A deliberately saved Left-anchor overhang survives startup even
+        # before live renderer content bounds are available.
         self.mock_widget.move.assert_called_with(-12, 500)
 
     @patch('PyQt6.QtWidgets.QApplication.screenAt')

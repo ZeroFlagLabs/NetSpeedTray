@@ -667,6 +667,19 @@ class PositionManager(QObject):
             )
             return False
 
+        # A Left-anchored widget may have been deliberately saved with part of
+        # its transparent/reserved window beyond the physical screen edge.
+        # At startup there may not have been a paint yet, so content bounds are
+        # unavailable. Preserve that previously constrained saved overhang as
+        # long as at least one pixel of the widget remains on the screen.
+        if self._state.config.get("free_move_anchor", "right") == "left":
+            saved_overhang = max(
+                0,
+                screen.geometry().left() - saved_x,
+            )
+            if 0 < saved_overhang < widget_width:
+                left_overhang = max(left_overhang, saved_overhang)
+
         clamped = ScreenUtils.validate_position(
             saved_x,
             saved_y,
