@@ -15,18 +15,18 @@ The personal build is maintained on:
 
 ## Current Personal Release
 
-Version: `2.1.7.3`
+Version: `2.1.7.4`
 
-Tag: `v2.1.7.3`
+Tag: `v2.1.7.4`
 
 Release source commit:
 
-`f9400fca5072c0cc8fc00301ce869098bf6d7b88`
+`6fd0f261466a640f9861bb9073abb76e9b82a9d6`
 
 The release contains:
 
-- `NetSpeedTray-2.1.7.3-x64-Setup.exe`
-- `NetSpeedTray-Portable-2.1.7.3.zip`
+- `NetSpeedTray-2.1.7.4-x64-Setup.exe`
+- `NetSpeedTray-Portable-2.1.7.4.zip`
 - `checksums.txt`
 
 The installer is locally built and unsigned.
@@ -156,7 +156,7 @@ The `zeroflaglabs-modified` branch contains personal-build-only changes.
 
 Current personal version:
 
-`2.1.7.3`
+`2.1.7.4`
 
 Update checks are redirected from:
 
