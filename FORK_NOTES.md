@@ -1,6 +1,6 @@
 ﻿# NetSpeedTray - ZeroFlagLabs Fork Notes
 
-Last updated: 5 October 2026
+Last updated: 6 October 2026
 
 ## Purpose
 
@@ -99,6 +99,16 @@ the lock.
 
 Default: Off.
 
+### Free Move left-edge positioning
+
+The personal build allows a small controlled left-edge overhang while using
+Free Move.
+
+The widget may extend up to 12 px beyond the physical left edge of the screen,
+allowing the visible readout to sit flush with the screen edge.
+
+The right, top and bottom edges remain fully constrained on-screen.
+
 ### Hardware unit spacing
 
 Branch:
@@ -127,7 +137,7 @@ The `zeroflaglabs-modified` branch contains personal-build-only changes.
 
 Current personal version:
 
-`2.1.7.2`
+`2.1.7.3`
 
 Update checks are redirected from:
 
