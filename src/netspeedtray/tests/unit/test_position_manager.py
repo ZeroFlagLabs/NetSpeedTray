@@ -335,6 +335,52 @@ class TestPositionManager(unittest.TestCase):
         self.mock_widget.move.assert_called_with(888, 999)
 
     @patch('PyQt6.QtWidgets.QApplication.screenAt')
+    def test_free_move_drag_allows_partial_left_overhang(self, mock_screen_at):
+        """Free Move may extend left while keeping a usable part of the widget visible."""
+        screen = self.mock_taskbar.get_screen.return_value
+        screen.geometry.return_value = QRect(0, 0, 1920, 1080)
+        screen.name.return_value = "DISPLAY1"
+
+        # Top-left is off-screen, but the widget's right edge is still visible.
+        mock_screen_at.side_effect = (
+            lambda point: None if point.x() < 0 else screen
+        )
+
+        self.config["free_move"] = True
+
+        constrained = self.manager.constrain_drag(QPoint(-500, 500))
+
+        # Free Move deliberately permits no more than 12 px beyond
+        # the physical left edge.
+        self.assertEqual(constrained, QPoint(-12, 500))
+
+    @patch('PyQt6.QtWidgets.QApplication.screenAt')
+    @patch('netspeedtray.core.position_manager.get_taskbar_info')
+    def test_free_move_restores_saved_left_overhang(
+        self,
+        mock_get_info,
+        mock_screen_at,
+    ):
+        """A deliberately negative Free Move X position survives restart."""
+        mock_get_info.return_value = self.mock_taskbar
+
+        screen = self.mock_taskbar.get_screen.return_value
+        screen.geometry.return_value = QRect(0, 0, 1920, 1080)
+        screen.name.return_value = "DISPLAY1"
+
+        mock_screen_at.side_effect = (
+            lambda point: None if point.x() < 0 else screen
+        )
+
+        self.config["free_move"] = True
+        self.config["position_x"] = -12
+        self.config["position_y"] = 500
+
+        self.manager.update_position()
+
+        self.mock_widget.move.assert_called_with(-12, 500)
+
+    @patch('PyQt6.QtWidgets.QApplication.screenAt')
     @patch('netspeedtray.core.position_manager.get_taskbar_info')
     def test_free_move_restores_on_secondary_screen(self, mock_get_info, mock_screen_at):
         """Regression for #133: saved coords on a secondary monitor must be restored,

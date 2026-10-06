@@ -35,6 +35,13 @@ if TYPE_CHECKING:
 # Logger Setup
 logger = logging.getLogger("NetSpeedTray.Core.PositionManager")
 
+# Free Move normally keeps the whole widget inside the screen. A small left-side
+# overhang is deliberately allowed so transparent/reserved widget space can sit
+# beyond the monitor edge and the visible content can be positioned flush with it.
+# Visually tuned on the ZeroFlagLabs build: -11 px was the preferred extreme, so
+# 12 px provides a one-pixel allowance without permitting meaningful widget loss.
+_FREE_MOVE_LEFT_OVERHANG_PX = 12
+
 
 # --- Owner-window (taskbar Z-order dock) ------------------------------------
 # Making the widget an OWNED window of the taskbar (GWLP_HWNDPARENT) lets the
@@ -106,15 +113,26 @@ class ScreenUtils:
 
 
     @staticmethod
-    def validate_position(x: int, y: int, widget_size: Tuple[int, int], screen: QScreen) -> ScreenPosition:
+    def validate_position(
+        x: int,
+        y: int,
+        widget_size: Tuple[int, int],
+        screen: QScreen,
+        left_overhang_px: int = 0,
+    ) -> ScreenPosition:
         """
-        Adjusts a desired position to ensure the widget remains fully within the given screen's full geometry.
+        Adjusts a desired position to keep the widget recoverable on-screen.
+
+        ``left_overhang_px`` optionally permits part of the widget to extend
+        beyond the physical left edge. This is used by Free Move so the user
+        can position visible content exactly against the screen edge.
         """
         try:
             screen_rect: QRect = screen.geometry()
             widget_width, widget_height = widget_size
 
-            valid_x = max(screen_rect.left(), min(x, screen_rect.right() - widget_width + 1))
+            left_limit = screen_rect.left() - max(0, int(left_overhang_px))
+            valid_x = max(left_limit, min(x, screen_rect.right() - widget_width + 1))
             valid_y = max(screen_rect.top(), min(y, screen_rect.bottom() - widget_height + 1))
 
             if valid_x != x or valid_y != y:
@@ -630,6 +648,18 @@ class PositionManager(QObject):
         center = QPoint(saved_x + widget_width // 2, saved_y + widget_height // 2)
         screen = QApplication.screenAt(center)
 
+        left_overhang = self._free_move_left_overhang_px()
+
+        # A deliberately overhung Free Move widget may have its centre just
+        # outside the monitor. Probe its visible right edge before treating the
+        # saved monitor as disconnected.
+        if screen is None and left_overhang > 0:
+            visible_probe = QPoint(
+                saved_x + widget_width - 1,
+                saved_y + widget_height // 2,
+            )
+            screen = QApplication.screenAt(visible_probe)
+
         if screen is None:
             logger.info(
                 "Saved free-move position (%s,%s) is on a disconnected monitor; "
@@ -638,7 +668,13 @@ class PositionManager(QObject):
             )
             return False
 
-        clamped = ScreenUtils.validate_position(saved_x, saved_y, widget_size, screen)
+        clamped = ScreenUtils.validate_position(
+            saved_x,
+            saved_y,
+            widget_size,
+            screen,
+            left_overhang_px=left_overhang,
+        )
         if (clamped.x, clamped.y) != (saved_x, saved_y):
             logger.info(
                 "Clamped saved free-move position (%s,%s) onto screen '%s' -> (%s,%s).",
@@ -721,6 +757,13 @@ class PositionManager(QObject):
         except Exception as e:
             logger.error("Error checking tray changes: %s", e)
 
+    def _free_move_left_overhang_px(self) -> int:
+        """Maximum permitted off-screen distance at the left edge in Free Move."""
+        if not bool(self._state.config.get("free_move", False)):
+            return 0
+
+        return _FREE_MOVE_LEFT_OVERHANG_PX
+
     def constrain_drag(self, pos: QPoint) -> QPoint:
         """
         Helper for InputHandler to constrain dragging.
@@ -731,18 +774,43 @@ class PositionManager(QObject):
 
         # FIX for #87: specific check for Free Move (and #188 free-float - both are "floating")
         if self.is_floating():
-            # If floating, only constrain to screen bounds (prevent total loss)
-            # FIX for #102: Use the screen at the drag destination, not the taskbar's screen
-            # This allows the widget to be dragged freely across all connected monitors
+            # Free Move may deliberately place part of the widget beyond the
+            # physical left edge. Keep a minimum visible grab area so the
+            # widget cannot be lost completely off-screen.
+            widget_size = (
+                self._state.widget.width(),
+                self._state.widget.height(),
+            )
+            left_overhang = self._free_move_left_overhang_px()
+
+            # FIX for #102: Use the screen at the drag destination, not the
+            # taskbar's screen. If the top-left is deliberately off-screen,
+            # probe the widget's visible right edge instead.
             screen = QApplication.screenAt(pos)
+            if not screen and left_overhang > 0:
+                visible_probe = QPoint(
+                    pos.x() + widget_size[0] - 1,
+                    pos.y() + widget_size[1] // 2,
+                )
+                screen = QApplication.screenAt(visible_probe)
+
             if not screen:
-                # Fallback to taskbar screen if no screen found at pos (shouldn't happen)
-                screen = self._state.taskbar_info.get_screen() if self._state.taskbar_info else None
-            
+                screen = (
+                    self._state.taskbar_info.get_screen()
+                    if self._state.taskbar_info
+                    else None
+                )
+
             if screen:
-                widget_size = (self._state.widget.width(), self._state.widget.height())
-                validated = ScreenUtils.validate_position(pos.x(), pos.y(), widget_size, screen)
+                validated = ScreenUtils.validate_position(
+                    pos.x(),
+                    pos.y(),
+                    widget_size,
+                    screen,
+                    left_overhang_px=left_overhang,
+                )
                 return QPoint(validated.x, validated.y)
+
             return pos
 
         # Otherwise, snap/constrain to taskbar
