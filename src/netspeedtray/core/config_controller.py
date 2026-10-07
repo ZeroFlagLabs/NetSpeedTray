@@ -99,6 +99,25 @@ class ConfigController:
         
         old_config = self.widget.config.copy()
 
+        # SettingsDialog works from a snapshot taken when it was opened.
+        # Position state, however, can change while Settings is still open
+        # because the user may drag the widget. Never let a later toggle
+        # (Lock Position, Content Anchor, etc.) restore stale coordinates.
+        #
+        # Work on a copy so Cancel/original_config supplied by the dialog is
+        # never mutated here.
+        updated_config = updated_config.copy()
+
+        for key in (
+            "position_x",
+            "position_y",
+            "docked_position_ratio",
+            "tray_offset_x",
+            "tray_offset_y",
+        ):
+            if key in old_config:
+                updated_config[key] = old_config[key]
+
         try:
             free_move_was_enabled = old_config.get('free_move', False)
             free_move_is_now_enabled = updated_config.get('free_move', False)

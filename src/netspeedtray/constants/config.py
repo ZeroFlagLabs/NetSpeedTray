@@ -186,6 +186,11 @@ class ConfigConstants:
         "free_move": DEFAULT_FREE_MOVE,
         "free_move_anchor": DEFAULT_FREE_MOVE_ANCHOR,
         "lock_position": DEFAULT_LOCK_POSITION,
+        # Stable taskbar-relative horizontal position. This is a normalized
+        # visible-content anchor coordinate (0.0 = left, 1.0 = right), not a
+        # distance from the system tray, so tray/clock geometry changes cannot
+        # make a user-positioned docked widget wander.
+        "docked_position_ratio": None,
         "free_float": DEFAULT_FREE_FLOAT,
         "double_click_action": DEFAULT_DOUBLE_CLICK_ACTION,
         "middle_click_action": DEFAULT_MIDDLE_CLICK_ACTION,
@@ -341,6 +346,12 @@ class ConfigConstants:
             "choices": ["left", "right"],
         },
         "lock_position": {"type": bool, "default": DEFAULT_LOCK_POSITION},
+        "docked_position_ratio": {
+            "type": (int, float, type(None)),
+            "default": None,
+            "min": 0.0,
+            "max": 1.0,
+        },
         "free_float": {"type": bool, "default": DEFAULT_FREE_FLOAT},
         "double_click_action": {"type": str, "default": DEFAULT_DOUBLE_CLICK_ACTION, "choices": CLICK_ACTION_CHOICES},
         "middle_click_action": {"type": str, "default": DEFAULT_MIDDLE_CLICK_ACTION, "choices": CLICK_ACTION_CHOICES},

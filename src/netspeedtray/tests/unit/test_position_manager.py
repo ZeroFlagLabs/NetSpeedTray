@@ -446,6 +446,181 @@ class TestPositionManager(unittest.TestCase):
             self.mock_widget.move.assert_called_with(1500, 1040)
 
     @patch('netspeedtray.core.position_manager.get_taskbar_info')
+    def test_docked_saved_ratio_ignores_tray_x_changes(self, mock_get_info):
+        """A docked user position must not wander when tray geometry changes."""
+        mock_get_info.return_value = self.mock_taskbar
+
+        screen = self.mock_taskbar.get_screen.return_value
+        screen.geometry.return_value = QRect(0, 0, 1920, 1080)
+        screen.availableGeometry.return_value = QRect(0, 0, 1920, 1040)
+
+        self.config["free_move"] = False
+        self.config["free_move_anchor"] = "left"
+        self.config["docked_position_ratio"] = 0.25
+
+        self.mock_widget.renderer = MagicMock()
+        self.mock_widget.renderer.get_content_bounds.return_value = QRect(
+            14, 0, 80, 20
+        )
+
+        with patch.object(
+            self.manager._calculator,
+            "calculate_position",
+            side_effect=[
+                ScreenPosition(1500, 1040),
+                ScreenPosition(300, 1040),
+            ],
+        ):
+            self.manager.update_position()
+
+            first_args, _ = self.mock_widget.move.call_args
+            self.assertEqual(first_args, (466, 1040))
+
+            self.mock_widget.move.reset_mock()
+            self.manager._last_applied_geometry = None
+
+            self.manager.update_position()
+
+            second_args, _ = self.mock_widget.move.call_args
+            self.assertEqual(second_args, (466, 1040))
+
+    def test_docked_left_anchor_can_hug_left_screen_edge(self):
+        """Left-anchor visible content may sit one pixel inside the screen."""
+        screen = self.mock_taskbar.get_screen.return_value
+        screen.geometry.return_value = QRect(0, 0, 1920, 1080)
+
+        self.config["free_move"] = False
+        self.config["free_move_anchor"] = "left"
+
+        self.mock_widget.renderer = MagicMock()
+        self.mock_widget.renderer.get_content_bounds.return_value = QRect(
+            14, 0, 80, 20
+        )
+
+        with patch.object(
+            self.manager._calculator,
+            "constrain_drag_position",
+            return_value=QPoint(0, 1040),
+        ):
+            constrained = self.manager.constrain_drag(
+                QPoint(-500, 500)
+            )
+
+        # Visible content begins at local x=14. Widget x=-13 leaves
+        # its first visible pixel at physical screen x=1.
+        self.assertEqual(constrained, QPoint(-13, 1040))
+
+    def test_docked_right_anchor_can_hug_right_screen_edge(self):
+        """Right-anchor visible content may sit one pixel inside the screen."""
+        screen = self.mock_taskbar.get_screen.return_value
+        screen.geometry.return_value = QRect(0, 0, 1920, 1080)
+
+        self.config["free_move"] = False
+        self.config["free_move_anchor"] = "right"
+
+        self.mock_widget.renderer = MagicMock()
+        self.mock_widget.renderer.get_content_bounds.return_value = QRect(
+            10, 0, 88, 20
+        )
+
+        with patch.object(
+            self.manager._calculator,
+            "constrain_drag_position",
+            return_value=QPoint(0, 1040),
+        ):
+            constrained = self.manager.constrain_drag(
+                QPoint(5000, 500)
+            )
+
+        # QRect(10, ..., 88, ...) has visible right x=97.
+        # Widget x=1821 therefore puts the final visible pixel at x=1918.
+        self.assertEqual(constrained, QPoint(1821, 1040))
+
+    @patch('netspeedtray.core.position_manager.get_taskbar_info')
+    def test_docked_ratio_reconstructs_after_resolution_change(
+        self,
+        mock_get_info,
+    ):
+        """A saved docked position follows the current screen width."""
+        mock_get_info.return_value = self.mock_taskbar
+
+        screen = self.mock_taskbar.get_screen.return_value
+
+        self.config["free_move"] = False
+        self.config["free_move_anchor"] = "left"
+        self.config["docked_position_ratio"] = 0.5
+
+        self.mock_widget.renderer = MagicMock()
+        self.mock_widget.renderer.get_content_bounds.return_value = QRect(
+            14, 0, 80, 20
+        )
+
+        screen.geometry.return_value = QRect(0, 0, 1920, 1080)
+        screen.availableGeometry.return_value = QRect(0, 0, 1920, 1040)
+
+        with patch.object(
+            self.manager._calculator,
+            "calculate_position",
+            return_value=ScreenPosition(1500, 1040),
+        ):
+            self.manager.update_position()
+
+        first_args, _ = self.mock_widget.move.call_args
+        self.assertEqual(first_args[0] + 14, 960)
+
+        self.mock_widget.move.reset_mock()
+        self.manager._last_applied_geometry = None
+
+        screen.geometry.return_value = QRect(0, 0, 1366, 768)
+        screen.availableGeometry.return_value = QRect(0, 0, 1366, 728)
+
+        with patch.object(
+            self.manager._calculator,
+            "calculate_position",
+            return_value=ScreenPosition(900, 728),
+        ):
+            self.manager.update_position()
+
+        second_args, _ = self.mock_widget.move.call_args
+        self.assertEqual(second_args[0] + 14, 682)
+
+    @patch('netspeedtray.core.position_manager.get_taskbar_info')
+    def test_docked_saved_ratio_does_not_run_legacy_x_calculator(
+        self,
+        mock_get_info,
+    ):
+        """Ratio restore calculates taskbar Y without legacy tray-side X."""
+        mock_get_info.return_value = self.mock_taskbar
+
+        screen = self.mock_taskbar.get_screen.return_value
+        screen.geometry.return_value = QRect(0, 0, 1920, 1080)
+        screen.availableGeometry.return_value = QRect(0, 0, 1920, 1040)
+
+        self.config["free_move"] = False
+        self.config["free_float"] = False
+        self.config["free_move_anchor"] = "left"
+        self.config["docked_position_ratio"] = 0.5
+
+        self.mock_widget.renderer = MagicMock()
+        self.mock_widget.renderer.get_content_bounds.return_value = QRect(
+            14, 0, 80, 20
+        )
+
+        # If ratio restoration touches the old full calculator, this test
+        # fails immediately. That path is also where the repeated
+        # "overlaps app icons" warning originated.
+        with patch.object(
+            self.manager._calculator,
+            "calculate_position",
+            side_effect=AssertionError(
+                "legacy horizontal X calculator was called"
+            ),
+        ):
+            self.manager.update_position()
+
+        self.mock_widget.move.assert_called_with(946, 1040)
+
+    @patch('netspeedtray.core.position_manager.get_taskbar_info')
     def test_update_position_passes_preferred_monitor(self, mock_get_info):
         """#72: update_position must forward `preferred_monitor` to get_taskbar_info."""
         mock_get_info.return_value = self.mock_taskbar

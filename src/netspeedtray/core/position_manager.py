@@ -573,8 +573,14 @@ class PositionManager(QObject):
             if not _float_refreshed:
                 self.refresh_float_state()
 
-            # A saved (dragged) position wins in both free-move and free-float.
+            # A saved absolute position wins in Free Move / free-float.
             if self._apply_saved_position():
+                return
+
+            # Normal docked mode uses a stable screen-relative content-anchor
+            # position once the user has established one. This deliberately
+            # ignores changing tray/clock geometry.
+            if self._apply_docked_saved_position():
                 return
 
             # No saved position + a taskbar-less preferred display -> default-place on that display.
@@ -703,10 +709,34 @@ class PositionManager(QObject):
     def _apply_calculated_position(self) -> bool:
         """Calculates and applies position based on taskbar rules."""
         target_pos = self.get_calculated_position()
-        if target_pos:
-            self._apply_geometry(target_pos.x, target_pos.y)
-            return True
-        return False
+        if not target_pos:
+            return False
+
+        self._apply_geometry(target_pos.x, target_pos.y)
+
+        # First docked run after upgrading: migrate the current calculated
+        # position to a stable screen-relative anchor. The old tray offset is
+        # retained in config for compatibility/fallback, but stops driving X.
+        if (
+            not self.is_floating()
+            and self._state.config.get("docked_position_ratio") is None
+        ):
+            ratio = self._docked_position_ratio_for_x(target_pos.x)
+
+            if ratio is not None:
+                self._state.config["docked_position_ratio"] = ratio
+
+                updater = getattr(self._state.widget, "update_config", None)
+                if callable(updater):
+                    try:
+                        updater({"docked_position_ratio": ratio})
+                    except Exception as e:
+                        logger.debug(
+                            "Could not persist migrated docked position: %s",
+                            e,
+                        )
+
+        return True
 
     def _apply_geometry(self, x: int, y: int) -> None:
         """Moves the widget with geometry debouncing to prevent redundant OS calls."""
@@ -768,6 +798,293 @@ class PositionManager(QObject):
 
         except Exception as e:
             logger.error("Error checking tray changes: %s", e)
+
+    def _content_anchor_local_x(self, anchor: Optional[str] = None) -> int:
+        """Return the selected visible-content anchor X inside the widget."""
+        widget_width = max(1, int(self._state.widget.width()))
+        anchor = anchor or self._state.config.get("free_move_anchor", "right")
+
+        try:
+            renderer = getattr(self._state.widget, "renderer", None)
+            bounds = renderer.get_content_bounds() if renderer is not None else None
+
+            if bounds is not None and bounds.isValid() and not bounds.isEmpty():
+                if anchor == "left":
+                    return int(bounds.left())
+                return int(bounds.right())
+        except Exception as e:
+            logger.debug("Could not read visible content bounds: %s", e)
+
+        # Before the first paint, use the normal renderer margin as a safe
+        # approximation. Once content bounds exist, the live visible edge wins.
+        margin = max(0, int(constants.renderer.TEXT_MARGIN))
+
+        if anchor == "left":
+            return min(widget_width - 1, margin)
+
+        return max(0, widget_width - 1 - margin)
+
+    def _docked_horizontal_x_limits(
+        self,
+        screen: QScreen,
+        widget_width: int,
+    ) -> Tuple[int, int]:
+        """
+        Horizontal drag limits for a taskbar-docked widget.
+
+        The selected visible-content edge may approach to within one pixel of
+        the matching physical screen edge. On the opposite side we retain the
+        reserved widget width so changing values still have growth headroom.
+        """
+        geometry = screen.geometry()
+        anchor = self._state.config.get("free_move_anchor", "right")
+        edge_margin = _FREE_MOVE_VISIBLE_LEFT_MARGIN_PX
+        reserve_overhang = max(
+            0,
+            int(constants.renderer.TEXT_MARGIN) - edge_margin,
+        )
+
+        local_anchor_x = self._content_anchor_local_x(anchor)
+
+        if anchor == "left":
+            # visible left = screen left + 1
+            minimum_x = geometry.left() + edge_margin - local_anchor_x
+
+            # Keep the right-side growth reservation essentially on-screen.
+            maximum_x = (
+                geometry.right()
+                - widget_width
+                + 1
+                + reserve_overhang
+            )
+        else:
+            # Keep the left-side growth reservation essentially on-screen.
+            minimum_x = geometry.left() - reserve_overhang
+
+            # visible right = screen right - 1
+            maximum_x = (
+                geometry.right()
+                - edge_margin
+                - local_anchor_x
+            )
+
+        if minimum_x > maximum_x:
+            # Pathological tiny-screen / oversized-widget fallback.
+            midpoint = geometry.left()
+            return midpoint, midpoint
+
+        return int(minimum_x), int(maximum_x)
+
+    def _docked_position_ratio_for_x(
+        self,
+        widget_x: int,
+        screen: Optional[QScreen] = None,
+    ) -> Optional[float]:
+        """
+        Convert a docked widget X coordinate into a stable normalized
+        visible-content position across its screen.
+        """
+        taskbar_info = self._state.taskbar_info
+        if taskbar_info is None:
+            return None
+
+        edge = taskbar_info.get_edge_position()
+        if edge not in (
+            constants.taskbar.edge.BOTTOM,
+            constants.taskbar.edge.TOP,
+        ):
+            return None
+
+        if screen is None:
+            screen = taskbar_info.get_screen()
+
+        if screen is None:
+            return None
+
+        geometry = screen.geometry()
+        span = max(1, geometry.width() - 1)
+
+        local_anchor_x = self._content_anchor_local_x()
+        global_anchor_x = int(widget_x) + local_anchor_x
+
+        ratio = (global_anchor_x - geometry.left()) / span
+        return float(max(0.0, min(1.0, ratio)))
+
+    def get_docked_position_ratio(self) -> Optional[float]:
+        """Return the current docked visible-content position for persistence."""
+        if self.is_floating():
+            return None
+
+        try:
+            return self._docked_position_ratio_for_x(
+                int(self._state.widget.x())
+            )
+        except Exception as e:
+            logger.debug("Could not capture docked position ratio: %s", e)
+            return None
+
+    def _current_horizontal_taskbar_y(
+        self,
+        taskbar_info: TaskbarInfo,
+        widget_height: int,
+    ) -> Optional[int]:
+        """
+        Return the widget Y for the current horizontal taskbar.
+
+        This deliberately calculates ONLY the taskbar axis. Calling the full
+        legacy PositionCalculator here would also calculate an obsolete
+        tray-relative X position, including its app-icon overlap warning,
+        even though docked-ratio positioning immediately discards that X.
+        """
+        try:
+            screen = taskbar_info.get_screen()
+
+            if screen is None:
+                return None
+
+            full_geom = screen.geometry()
+            avail_geom = screen.availableGeometry()
+
+            if not isinstance(avail_geom, QRect):
+                avail_geom = full_geom
+
+            dpi_scale = (
+                taskbar_info.dpi_scale
+                if taskbar_info.dpi_scale > 0
+                else 1.0
+            )
+
+            edge = taskbar_info.get_edge_position()
+
+            if edge == constants.taskbar.edge.BOTTOM:
+                visible_tb_height = (
+                    full_geom.bottom() - avail_geom.bottom()
+                )
+                y_origin = avail_geom.bottom() + 1
+
+                if visible_tb_height <= 0:
+                    visible_tb_height = (
+                        taskbar_info.rect[3] - taskbar_info.rect[1]
+                    ) / dpi_scale
+                    y_origin = (
+                        full_geom.bottom() + 1
+                    ) - visible_tb_height
+
+            elif edge == constants.taskbar.edge.TOP:
+                visible_tb_height = (
+                    avail_geom.top() - full_geom.top()
+                )
+                y_origin = full_geom.top()
+
+                if visible_tb_height <= 0:
+                    visible_tb_height = (
+                        taskbar_info.rect[3] - taskbar_info.rect[1]
+                    ) / dpi_scale
+                    y_origin = full_geom.top()
+
+            else:
+                return None
+
+            return round(
+                y_origin
+                + (visible_tb_height - widget_height) / 2.0
+            )
+
+        except Exception as e:
+            logger.debug(
+                "Could not calculate current taskbar Y: %s",
+                e,
+            )
+            return None
+
+    def _apply_docked_saved_position(self) -> bool:
+        """
+        Restore a user-established docked position.
+
+        X is reconstructed from a normalized visible-content coordinate on the
+        current screen. Y still comes from the CURRENT taskbar geometry, so
+        monitor, resolution, DPI and dock/undock changes cannot leave the
+        widget using stale desktop coordinates.
+        """
+        if self.is_floating():
+            return False
+
+        ratio = self._state.config.get("docked_position_ratio")
+
+        if (
+            isinstance(ratio, bool)
+            or not isinstance(ratio, (int, float))
+        ):
+            return False
+
+        taskbar_info = self._state.taskbar_info
+        if taskbar_info is None:
+            return False
+
+        edge = taskbar_info.get_edge_position()
+        if edge not in (
+            constants.taskbar.edge.BOTTOM,
+            constants.taskbar.edge.TOP,
+        ):
+            # Keep the existing vertical-taskbar behaviour for now.
+            return False
+
+        screen = taskbar_info.get_screen()
+        if screen is None:
+            return False
+
+        widget_width = int(self._state.widget.width())
+        widget_height = int(self._state.widget.height())
+
+        if widget_width <= 0 or widget_height <= 0:
+            return False
+
+        # Resolve only the CURRENT taskbar Y. Do not run the legacy
+        # tray-relative X calculator because X is now reconstructed from the
+        # saved visible-content ratio.
+        taskbar_y = self._current_horizontal_taskbar_y(
+            taskbar_info,
+            widget_height,
+        )
+
+        if taskbar_y is None:
+            return False
+
+        geometry = screen.geometry()
+        span = max(1, geometry.width() - 1)
+
+        target_anchor_x = (
+            geometry.left()
+            + round(float(ratio) * span)
+        )
+
+        # Keep the visible edge just inside the physical display where the
+        # saved ratio resolves to an extreme.
+        if geometry.width() > 2:
+            target_anchor_x = max(
+                geometry.left() + _FREE_MOVE_VISIBLE_LEFT_MARGIN_PX,
+                min(
+                    target_anchor_x,
+                    geometry.right() - _FREE_MOVE_VISIBLE_LEFT_MARGIN_PX,
+                ),
+            )
+
+        widget_x = (
+            target_anchor_x
+            - self._content_anchor_local_x()
+        )
+
+        minimum_x, maximum_x = self._docked_horizontal_x_limits(
+            screen,
+            widget_width,
+        )
+        widget_x = max(minimum_x, min(widget_x, maximum_x))
+
+        self._apply_geometry(
+            int(widget_x),
+            int(taskbar_y),
+        )
+        return True
 
     def _free_move_left_overhang_px(self) -> int:
         """Allow only enough left overhang to keep visible content 1 px on-screen."""
@@ -860,11 +1177,59 @@ class PositionManager(QObject):
 
             return pos
 
-        # Otherwise, snap/constrain to taskbar
+        # Normal docked mode: keep Y snapped to the CURRENT taskbar but
+        # allow X across the stable physical screen rather than constraining it
+        # against moving tray/task-list boundaries.
+        taskbar_info = self._state.taskbar_info
+
+        if taskbar_info:
+            edge = taskbar_info.get_edge_position()
+            screen = taskbar_info.get_screen()
+
+            if (
+                screen is not None
+                and edge in (
+                    constants.taskbar.edge.BOTTOM,
+                    constants.taskbar.edge.TOP,
+                )
+            ):
+                widget_width = int(self._state.widget.width())
+                widget_height = int(self._state.widget.height())
+
+                snapped = self._calculator.constrain_drag_position(
+                    pos,
+                    taskbar_info,
+                    self._state.widget.size(),
+                )
+                fixed_y = snapped.y() if snapped is not None else pos.y()
+
+                minimum_x, maximum_x = self._docked_horizontal_x_limits(
+                    screen,
+                    widget_width,
+                )
+                constrained_x = max(
+                    minimum_x,
+                    min(pos.x(), maximum_x),
+                )
+
+                # Defensive vertical clamp while retaining the taskbar snap.
+                geometry = screen.geometry()
+                maximum_y = geometry.bottom() - widget_height + 1
+                fixed_y = max(
+                    geometry.top(),
+                    min(fixed_y, maximum_y),
+                )
+
+                return QPoint(
+                    int(constrained_x),
+                    int(fixed_y),
+                )
+
+        # Vertical taskbars retain the established behaviour.
         res = self._calculator.constrain_drag_position(
-            pos, 
-            self._state.taskbar_info, 
-            self._state.widget.size()
+            pos,
+            self._state.taskbar_info,
+            self._state.widget.size(),
         )
         return res if res else pos
 
@@ -875,6 +1240,7 @@ class PositionManager(QObject):
         """
         self._state.config['position_x'] = None
         self._state.config['position_y'] = None
+        self._state.config['docked_position_ratio'] = None
         # We rely on the caller (Widget) to persist this config change to disk if needed.
         self.update_position()
         self.ensure_topmost()

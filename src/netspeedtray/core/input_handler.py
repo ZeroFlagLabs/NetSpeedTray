@@ -40,11 +40,8 @@ class InputHandler(QObject):
         self._is_dragging: bool = False
 
     def _is_position_locked(self) -> bool:
-        """True only when Lock Position and Free Move are both enabled."""
-        return (
-            bool(self.widget.config.get("free_move", False))
-            and bool(self.widget.config.get("lock_position", False))
-        )
+        """True when the user has locked manual widget dragging."""
+        return bool(self.widget.config.get("lock_position", False))
 
     def handle_mouse_press(self, event: QMouseEvent) -> None:
         """Handles mouse press start (left = drag; middle = configurable click action)."""
@@ -150,7 +147,7 @@ class InputHandler(QObject):
         """
         Saves the final position based on the current mode:
         - Floating (Free Move, or #188 free-float on a taskbar-less display): absolute X/Y.
-        - Docked: the offset relative to the tray/edge.
+        - Docked: stable screen-relative content position on horizontal taskbars.
         """
         try:
             config = self.widget.config
@@ -174,32 +171,52 @@ class InputHandler(QObject):
                 dpi_scale = tb_info.dpi_scale if tb_info.dpi_scale > 0 else 1.0
                 
                 if edge in (constants.taskbar.edge.BOTTOM, constants.taskbar.edge.TOP):
-                    # Horizontal Taskbar: Variable is X offset from RIGHT side
-                    # Offset = RightBoundary - WidgetRight
-                    # Logic matches PositionCalculator: x = right_boundary - widget_width - offset
-                    # So: offset = right_boundary - x - widget_width
-                    
-                    # Calculate Right Boundary (tray left or screen right edge)
-                    tray_rect = tb_info.get_tray_rect()
-                    if tray_rect:
-                        right_boundary = tray_rect[0] / dpi_scale
-                    else:
-                        # Secondary taskbar (no tray HWND): match the calculator's clock reserve (#186)
-                        # so the saved offset keeps the widget in the same clock-clear spot.
-                        reserve = config.get("secondary_clock_reserve_px",
-                                             constants.config.defaults.DEFAULT_SECONDARY_CLOCK_RESERVE_PX)
-                        screen = tb_info.get_screen()
-                        screen_right = float(screen.geometry().right() + 1) if screen else (tb_info.rect[2] / dpi_scale)
-                        right_boundary = screen_right - reserve
+                    # Horizontal taskbar positions are persisted independently
+                    # of the system tray. The ratio represents the selected
+                    # visible-content edge across the physical screen.
+                    ratio = self.position_manager.get_docked_position_ratio()
 
-                    # Current Widget X
-                    current_x_log = self.widget.pos().x() # Use logical pos from pos()
-                    widget_width = self.widget.width()
-                    
-                    new_offset = int(right_boundary - current_x_log - widget_width)
-                    updates["tray_offset_x"] = new_offset
-                    self.logger.debug(f"Saved Horizontal Offset: {new_offset} (RightBound={right_boundary}, X={current_x_log}, W={widget_width})")
-                    
+                    if ratio is not None:
+                        updates["docked_position_ratio"] = float(ratio)
+                        self.logger.debug(
+                            "Saved docked position ratio: %.6f",
+                            float(ratio),
+                        )
+                    else:
+                        # Defensive fallback to the legacy tray-relative offset
+                        # if screen/taskbar information is temporarily missing.
+                        tray_rect = tb_info.get_tray_rect()
+
+                        if tray_rect:
+                            right_boundary = tray_rect[0] / dpi_scale
+                        else:
+                            reserve = config.get(
+                                "secondary_clock_reserve_px",
+                                constants.config.defaults.DEFAULT_SECONDARY_CLOCK_RESERVE_PX,
+                            )
+                            screen = tb_info.get_screen()
+                            screen_right = (
+                                float(screen.geometry().right() + 1)
+                                if screen
+                                else (tb_info.rect[2] / dpi_scale)
+                            )
+                            right_boundary = screen_right - reserve
+
+                        current_x_log = self.widget.pos().x()
+                        widget_width = self.widget.width()
+
+                        new_offset = int(
+                            right_boundary
+                            - current_x_log
+                            - widget_width
+                        )
+
+                        updates["tray_offset_x"] = new_offset
+                        self.logger.debug(
+                            "Saved legacy Horizontal Offset fallback: %s",
+                            new_offset,
+                        )
+
                 elif edge in (constants.taskbar.edge.LEFT, constants.taskbar.edge.RIGHT):
                     # Vertical Taskbar: Variable is Y offset from BOTTOM
                     # Logic: y = bottom_boundary - widget_height - offset_y

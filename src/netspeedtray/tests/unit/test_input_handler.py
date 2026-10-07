@@ -83,6 +83,7 @@ class TestInputHandler(unittest.TestCase):
         # _save_dragged_position asks the position manager whether we're "floating" (free-move OR the
         # #188 free-float); mirror the widget's free_move config so the docked/offset path is exercised.
         self.mock_position_manager.is_floating.side_effect = lambda: bool(self.mock_widget.config.get('free_move', False))
+        self.mock_position_manager.get_docked_position_ratio.return_value = 0.5
         self.mock_tray_manager = MagicMock()
         
         self.handler = InputHandler(
@@ -133,8 +134,8 @@ class TestInputHandler(unittest.TestCase):
         self.assertFalse(self.mock_widget._dragging)
         event.accept.assert_called_once()
 
-    def test_position_lock_does_not_affect_docked_widget(self):
-        """Lock position is deliberately scoped to floating mode."""
+    def test_position_lock_blocks_docked_widget_drag(self):
+        """Lock Position prevents manual dragging in docked mode too."""
         self.mock_widget.config = {
             "free_move": False,
             "lock_position": True,
@@ -147,8 +148,10 @@ class TestInputHandler(unittest.TestCase):
 
         self.handler.handle_mouse_press(event)
 
-        self.assertEqual(self.handler._drag_start_pos, QPoint(50, 50))
+        self.assertIsNone(self.handler._drag_start_pos)
         self.assertFalse(self.handler._is_dragging)
+        self.assertFalse(self.mock_widget._dragging)
+        event.accept.assert_called_once()
 
     def test_position_lock_blocks_existing_drag_attempt(self):
         """A locked floating widget never reaches the position manager."""
@@ -216,9 +219,21 @@ class TestInputHandler(unittest.TestCase):
         
         args, _ = self.mock_widget.update_config.call_args
         updates = args[0]
-        # Position is saved via tray_offset_x/y or position_x/y depending on mode/OS.
-        # But 'free_move' is NOT part of the 'updates' dict sent to update_config.
-        self.assertIn('position_x', updates) if self.mock_widget.config.get('free_move') else self.assertTrue(any(k in updates for k in ['tray_offset_x', 'tray_offset_y']))
+        # Floating mode stores absolute X/Y. Horizontal docked mode
+        # stores the stable screen-relative visible-content ratio.
+        if self.mock_widget.config.get('free_move'):
+            self.assertIn('position_x', updates)
+        else:
+            self.assertTrue(
+                any(
+                    key in updates
+                    for key in (
+                        'docked_position_ratio',
+                        'tray_offset_x',
+                        'tray_offset_y',
+                    )
+                )
+            )
         
         # Since we didn't mock x() and y(), only move(), it returns the design values (100, 100)
         self.assertEqual(updates.get('position_x', 100), 100)

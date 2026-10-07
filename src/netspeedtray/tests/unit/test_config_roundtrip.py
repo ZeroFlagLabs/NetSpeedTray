@@ -126,6 +126,21 @@ def test_non_none_position_round_trips(tmp_path):
     assert loaded["position_y"] == 56
 
 
+def test_docked_position_ratio_round_trips(tmp_path):
+    """Stable docked positioning metadata is persisted when established."""
+    path = tmp_path / "NetSpeedTray_Config.json"
+    cfg = DEFAULT_CONFIG.copy()
+    cfg["docked_position_ratio"] = 0.375
+
+    ConfigManager(path).save(cfg)
+
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    assert raw["docked_position_ratio"] == 0.375
+
+    loaded = ConfigManager(path).load()
+    assert loaded["docked_position_ratio"] == 0.375
+
+
 # --- missing keys fall back to defaults --------------------------------------
 
 def test_missing_keys_fall_back_to_defaults(tmp_path):

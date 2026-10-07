@@ -117,17 +117,27 @@ class WidgetPage(QWidget):
         layout.addWidget(section_header(self.i18n.BEHAVIOR_GROUP_TITLE))
         self.free_move = Win11Toggle(label_text="")
         self.free_move.toggled.connect(self._on_free_move_toggled)
-        layout.addWidget(SettingCard(self.i18n.FREE_MOVE_LABEL, control=self.free_move))
+        layout.addWidget(
+            SettingCard(
+                self.i18n.FREE_MOVE_LABEL,
+                description=(
+                    "Allow the widget to be positioned anywhere on the screen. "
+                    "Position may need adjusting after changes to displays, "
+                    "resolution, scaling/DPI or monitor arrangement."
+                ),
+                control=self.free_move,
+            )
+        )
 
         self.free_move_anchor = Win11ComboBox()
         self.free_move_anchor.addItem("Left", userData="left")
         self.free_move_anchor.addItem("Right", userData="right")
         self.free_move_anchor.setMinimumWidth(110)
-        self.free_move_anchor.setEnabled(False)
+        self.free_move_anchor.setEnabled(True)
         self.free_move_anchor.currentIndexChanged.connect(self.on_change)
         layout.addWidget(
             SettingCard(
-                "Free Move Content Anchor",
+                "Content Anchor",
                 description=(
                     "Choose which side of the visible widget content stays fixed "
                     "when displayed values change width."
@@ -137,14 +147,15 @@ class WidgetPage(QWidget):
         )
 
         self.lock_position = Win11Toggle(label_text="")
-        self.lock_position.setEnabled(False)
+        self.lock_position.setEnabled(True)
         self.lock_position.toggled.connect(self.on_change)
         layout.addWidget(SettingCard(
             getattr(self.i18n, "LOCK_POSITION_LABEL", "Lock Free Move Position"),
             description=getattr(
                 self.i18n,
                 "LOCK_POSITION_DESCRIPTION",
-                "Prevent the widget being dragged while Free Move is enabled.",
+                "Prevent the widget being accidentally dragged. Display and "
+                "taskbar changes may still reposition it when required.",
             ),
             control=self.lock_position,
         ))
@@ -184,15 +195,9 @@ class WidgetPage(QWidget):
 
     # --- behavior ---------------------------------------------------------------
     def _on_free_move_toggled(self, enabled: bool) -> None:
-        """Only offer position locking while Free Move itself is enabled."""
-        self.lock_position.setEnabled(enabled)
-        self.free_move_anchor.setEnabled(enabled)
-
-        if not enabled:
-            self.lock_position.blockSignals(True)
-            self.lock_position.setChecked(False)
-            self.lock_position.blockSignals(False)
-
+        """Free Move changes positioning mode only; anchor and lock remain independent."""
+        self.lock_position.setEnabled(True)
+        self.free_move_anchor.setEnabled(True)
         self.on_change()
 
     def ensure_hardware_visible(self) -> None:
@@ -286,12 +291,12 @@ class WidgetPage(QWidget):
         index = self.free_move_anchor.findData(anchor)
         if index >= 0:
             self.free_move_anchor.setCurrentIndex(index)
-        self.free_move_anchor.setEnabled(free_move)
+        self.free_move_anchor.setEnabled(True)
 
         self.lock_position.setChecked(
-            free_move and bool(config.get("lock_position", False))
+            bool(config.get("lock_position", False))
         )
-        self.lock_position.setEnabled(free_move)
+        self.lock_position.setEnabled(True)
 
         self.free_float.setChecked(config.get("free_float", True))
         self.keep_visible_fullscreen.setChecked(

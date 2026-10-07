@@ -17,6 +17,7 @@ def test_layout_and_behaviour_round_trip(page):
         "widget_display_order": ["gpu", "cpu", "network"],
         "space_before_hardware_units": True,
         "free_move": True,
+        "free_move_anchor": "left",
         "lock_position": True,
         "keep_visible_fullscreen": True,
     })
@@ -25,6 +26,7 @@ def test_layout_and_behaviour_round_trip(page):
     assert out["widget_display_order"] == ["gpu", "cpu", "network"]
     assert out["space_before_hardware_units"] is True
     assert out["free_move"] is True
+    assert out["free_move_anchor"] == "left"
     assert out["lock_position"] is True
     assert out["keep_visible_fullscreen"] is True
     # Tray offset is intentionally not a Widget-page control (Free Move handles repositioning).
@@ -32,25 +34,30 @@ def test_layout_and_behaviour_round_trip(page):
     assert "tray_offset_y" not in out
 
 
-def test_lock_position_only_available_with_free_move(page):
-    """Locking is meaningful only while Free Move is enabled."""
+def test_anchor_and_lock_available_in_both_position_modes(page):
+    """Content Anchor and Lock Position are independent of Free Move."""
     page.load_settings({
         "free_move": False,
+        "free_move_anchor": "left",
         "lock_position": True,
     })
 
-    assert page.lock_position.isEnabled() is False
-    assert page.get_settings()["lock_position"] is False
+    assert page.free_move_anchor.isEnabled() is True
+    assert page.free_move_anchor.currentData() == "left"
+    assert page.lock_position.isEnabled() is True
+    assert page.get_settings()["lock_position"] is True
 
     page.free_move.setChecked(True)
-    assert page.lock_position.isEnabled() is True
 
-    page.lock_position.setChecked(True)
+    assert page.free_move_anchor.isEnabled() is True
+    assert page.lock_position.isEnabled() is True
     assert page.get_settings()["lock_position"] is True
 
     page.free_move.setChecked(False)
-    assert page.lock_position.isEnabled() is False
-    assert page.get_settings()["lock_position"] is False
+
+    assert page.free_move_anchor.isEnabled() is True
+    assert page.lock_position.isEnabled() is True
+    assert page.get_settings()["lock_position"] is True
 
 
 def test_stacked_mode_encoding_round_trips(page):

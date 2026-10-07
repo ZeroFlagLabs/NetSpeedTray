@@ -1307,7 +1307,11 @@ class NetworkSpeedWidget(QWidget):
         self.position_manager.reset_to_default()
         
         # Save the cleared config state
-        self.update_config({'position_x': None, 'position_y': None})
+        self.update_config({
+            'position_x': None,
+            'position_y': None,
+            'docked_position_ratio': None,
+        })
 
 
     def apply_all_settings(self) -> None:
