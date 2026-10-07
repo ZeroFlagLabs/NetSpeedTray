@@ -85,17 +85,15 @@ continuing into Inno Setup.
 Submitted upstream as PR #329.
 
 
-### Lock Free Move Position
+### Position locking
 
-Branch:
+The original Free Move position lock has been expanded into a general
+`Lock Position` setting.
 
-`floating-position-lock`
-
-Adds an optional lock for the existing Free Move mode.
-
-When Free Move is enabled, `Lock Free Move Position` can prevent accidental
-dragging of the widget. Turning Free Move off automatically clears and disables
-the lock.
+The lock is available in both taskbar-docked and Free Move modes. It prevents
+manual dragging without blocking legitimate application-driven repositioning,
+such as when the active taskbar, display geometry or monitor arrangement
+changes.
 
 Default: Off.
 
@@ -108,18 +106,42 @@ CPU and GPU values above them align with the right edge of their corresponding
 RAM and VRAM value. This keeps each CPU/RAM and GPU/VRAM pair visually aligned
 while allowing the memory value to grow naturally from its label.
 
-### Free Move content anchoring
+### Content anchoring
 
-Free Move now provides a selectable `Free Move Content Anchor`:
+The widget provides a selectable `Content Anchor` in both taskbar-docked and
+Free Move modes:
 
 - `Left` keeps the visible content anchored at the left and lets changing
   values grow or shrink to the right.
-- `Right` keeps the content anchored at the right and preserves unused space
-  on the left as expansion headroom.
+- `Right` keeps the visible content anchored at the right and preserves unused
+  space on the left as expansion headroom.
 
-Left-edge movement is constrained using the visible/reserved content geometry
-rather than a fixed widget-window overhang. This keeps content on-screen while
-still allowing transparent or unused widget space to extend beyond the edge.
+Screen-edge positioning uses the visible content rather than the full reserved
+widget window. This allows transparent or unused width to extend beyond the
+screen while keeping the selected visible edge approximately 1 px inside the
+physical display edge.
+
+Free Move still stores an absolute desktop position, so the settings page
+explicitly warns that its position may need adjustment after changes to
+displays, resolution, scaling/DPI or monitor arrangement.
+
+### Stable taskbar-docked positioning
+
+Taskbar-docked positioning no longer uses the moving system-tray boundary as
+the permanent horizontal reference after the user chooses a position.
+
+Horizontal docked placement is stored as a normalized visible-content position
+across the current screen. When display geometry changes, NetSpeedTray rebuilds
+the X position against the current screen while independently recalculating Y
+from the current taskbar.
+
+This prevents tray/clock geometry changes from moving a user-positioned widget
+and makes docked placement resilient to resolution, DPI and monitor-topology
+changes.
+
+The existing tray-relative offsets remain available as compatibility/default
+placement data, but no longer drive the horizontal position once a docked
+position has been established.
 
 ### Hover-card positioning
 
